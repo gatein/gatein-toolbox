@@ -18,7 +18,7 @@ import org.exoplatform.container.component.RequestLifeCycle
 class user extends CRaSHCommand {
 
     //
-    private static final int DEFAULT_BATCH_SIZE = 10;
+    private static final int DEFAULT_BATCH_SIZE = 100;
     
     /** . */
     @Usage("don't broadcast event")
