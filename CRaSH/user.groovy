@@ -84,7 +84,6 @@ class user extends CRaSHCommand {
             try {
                 for (int i = 0;i < batchSize;i++) {
                     if (!transacted) {
-                        println("BEGIN");
                         transacted = true;
                         RequestLifeCycle.begin(portalContainer);
                     }
@@ -100,7 +99,6 @@ class user extends CRaSHCommand {
                     }
                 }
             } finally {
-                println("END");
                 if (transacted) {
                     transacted = false;
                     RequestLifeCycle.end();
