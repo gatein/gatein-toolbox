@@ -5,10 +5,10 @@ stuff for GateIn
 A set of scripts for CRaSH, installation is done by copying them into CRaSH WEB-INF/groovy/commands directory
 
 Creates 100 users foo0 -> foo99:
->addusers -s 100 -n foo
+>user add -u foo -p password 100
 
 Assigning a membership on existing users:
->setmembership -a member:/platform/administrator -u mary
+>user addmembership -m member:/platform/administrators mary john
 
 Creating a batch of users and assigning them a membership:
->addusers -s 100 -n bilto | setmembership -a member:/platform/administrators
+>user add -u foo -p password 100 | user addmembership -a member:/platform/administrators
