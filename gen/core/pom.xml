@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <parent>
+      <artifactId>gateingen.parent</artifactId>
+      <groupId>org.gateingen</groupId>
+      <version>1.0.0-Alpha01</version>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+
+   <artifactId>gateingen.core</artifactId>
+   <name>Gatein generatpr - Core</name>
+
+   <dependencies>
+      <dependency>
+         <groupId>org.apache.velocity</groupId>
+         <artifactId>velocity</artifactId>
+         <version>1.7</version>
+      </dependency>
+   </dependencies>
+   
+   <build>
+      <plugins>
+         <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>1.1.1</version>
+            <executions>
+               <execution>
+                  <phase>test</phase>
+                  <goals>
+                     <goal>java</goal>
+                  </goals>
+               </execution>
+            </executions>
+            <configuration>
+               <mainClass>org.gatein.descriptorgenerator.Main</mainClass>
+               <systemProperties>
+                  <systemProperty>
+                     <key>gateingen.childrenSize</key>
+                     <value>${gateingen.childrenSize}</value>
+                  </systemProperty>
+                  <systemProperty>
+                     <key>gateingen.height</key>
+                     <value>${gateingen.height}</value>
+                  </systemProperty>
+                  <systemProperty>
+                     <key>gateingen.template.path</key>
+                     <value>${basedir}/src/main/resources/templates/</value>
+                  </systemProperty>
+                 <systemProperty>
+                    <key>gateingen.output.path</key>
+                    <value>${project.build.directory}/descriptors</value>
+                 </systemProperty>
+               </systemProperties>
+            </configuration>
+         </plugin>
+      </plugins>
+   </build>
+</project>

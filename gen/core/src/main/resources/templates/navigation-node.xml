@@ -1,0 +1,6 @@
+<node>
+   <uri>$path</uri>
+   <name>$name</name>
+   <label>$name</label>
+   <visibility>DISPLAYED</visibility>
+   <page-reference>$pageRef</page-reference>

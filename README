@@ -1,4 +1,4 @@
-stuff for GateIn
+Various stuff for GateIn
 
 -= CRaSH =- 
 
@@ -12,3 +12,7 @@ Assigning a membership on existing users:
 
 Creating a batch of users and assigning them a membership:
 >user add -u foo -p password 100 | user addmembership -a member:/platform/administrators
+
+-= Gen =>
+
+A generator for deployment descriptors
