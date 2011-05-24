@@ -14,6 +14,7 @@ import org.exoplatform.container.ExoContainer
  * @author <a href="henri.gomez@exoplatform.com">Henri Gomez</a>
  * @author <a href="julien.viet@exoplatform.com">Julien Viet</a>
  * @author <a href="thomas.delhomenie@exoplatform.com">Thomas Delhomenie</a>
+ * @author <a href="thomas.delhomenie@exoplatform.com">Romain Dénarié</a>
  */
 @Usage("user management")
 class user extends CRaSHCommand {
