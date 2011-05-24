@@ -11,7 +11,7 @@ Assigning a membership on existing users:
 >user addmembership -m member:/platform/administrators mary john
 
 Creating a batch of users and assigning them a membership:
->user add -u foo -p password 100 | user addmembership -a member:/platform/administrators
+>user add -u foo -p password -m member:/platform/administrators 100
 
 -= Gen =>
 
