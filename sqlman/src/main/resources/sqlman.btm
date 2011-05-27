@@ -1,0 +1,17 @@
+HELPER org.sqlman.SQLHelper
+
+RULE SQLMan monitor PreparedStatement executeQuery
+INTERFACE ^java.sql.PreparedStatement
+METHOD executeQuery()
+AT RETURN
+IF TRUE
+DO log("query")
+ENDRULE
+
+RULE SQLMan monitor PreparedStatement executeUpdate
+INTERFACE ^java.sql.PreparedStatement
+METHOD executeUpdate()
+AT RETURN
+IF TRUE
+DO log("update")
+ENDRULE

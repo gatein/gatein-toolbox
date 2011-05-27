@@ -1,0 +1,60 @@
+SQLMan uses the JBoss Byteman framwork to monitor SQL prepared statement executions.
+
+-= What it does =-
+
+SQLMan intercept java.sql.PrepareStatement executeQuery() and executeUpdate() methods and log them to a centralized MBean.
+When doing so, it inspects the stack traces and find the closest matching package to categorize the operation. For instance,
+if the following JVM stack trace invokes the executeQuery() method of prepared statement with a package list configured
+with the "org.exoplatform.portal.*" value:
+
+org.apache.commons.dbcp.DelegatingPreparedStatement.executeQuery(DelegatingPreparedStatement.java:96)
+org.exoplatform.services.jcr.impl.storage.jdbc.optimisation.db.SingleDbJDBCConnection.findValuesByPropertyId(SingleDbJDBCConnection.java:527)
+org.exoplatform.services.jcr.impl.storage.jdbc.optimisation.db.HSQLDBSingleDbJDBCConnection.access$2001(HSQLDBSingleDbJDBCConnection.java:45)
+...
+org.exoplatform.portal.pom.data.Mapper
+...
+
+The "query" kind will be logged to the "org.exoplatform.portal.*" package.
+
+-= Install Byteman =-
+
+Download and install (unzip) Byteman 1.5.1 on your system.
+
+-= Configure server =-
+
+Update the JVM to add the following:
+- -javaagent:$BYTEMAN_HOME/lib/byteman.jar=boot:$BYTEMAN_HOME/lib/byteman.jar,listener:true
+- -Dorg.jboss.byteman.sysprops.strict=false
+For instance modify gatein.sh to replace JAVA_OPTS declaration by:
+JAVA_OPTS="-javaagent:$BYTEMAN_HOME/lib/byteman.jar=boot:$BYTEMAN_HOME/lib/byteman.jar,listener:true -Xms128m -Xmx384m -XX:MaxPermSize=192m $JAVA_OPTS $LOG_OPTS $SECURITY_OPTS $EXO_OPTS -Dorg.jboss.byteman.sysprops.strict=false $GATEIN_OPTS"
+
+-= Run server =-
+
+Execute "sh gatein.sh run"
+
+-= Upload the SQLMan jar and scripts to the server -=
+
+Execute "mvn antrun:run -Psubmit"
+
+By default this will configure byteman to monitor GateIn package "org.exoplatform.portal.*", it can be modified by changing
+the property sqlman.pkgs such as "mvn antrun:run -Psubmit -Dsqlman.pkgs=foo.*,bar.*"
+
+The sqlman.pkgs is a comma separated list of packages, that can contain wildcards but don't have to, for example
+- "*" will match any package
+- "" will match the empty package
+- "foo" will match the exact foo package
+- "foo*" will match any package prefixed by foo
+- "foo.*" will match any package prefix by foo.
+
+-= Interract with SQLMan =-
+
+There are two ways to interract with SQLMan:
+
+1/ when the JVM is shutdown, a hook will print the statistics on the console
+2/ a singleton mbean is registered against the platform mbean server named exo:service=sqlman that provides various operations such as:
+- report() : returns the current report
+- printReport() : prints the current report on the System.out stream
+- getPackages() : returns a list of the known packages
+- getKinds() : returns a list of the known kinds
+- getCountValue(String kind, int index) : returns the current count value for the specified kind and package index
+- clear() : reset the counters
