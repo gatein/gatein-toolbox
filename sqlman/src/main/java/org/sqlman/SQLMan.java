@@ -65,7 +65,7 @@ public class SQLMan implements SQLManMBean {
   private final Pattern pattern;
 
   /** . */
-  private final ConcurrentMap<String, ConcurrentMap<Integer, AtomicLong>> map;
+  private final ConcurrentMap<String, ConcurrentMap<Integer, AtomicLong>> state;
 
   /** . */
   private String[] pkgs;
@@ -78,6 +78,9 @@ public class SQLMan implements SQLManMBean {
       pkgs = pkgList.split("\b*,\b*");
       for (int i = 0; i < pkgs.length; i++) {
         String pkg = pkgs[i] = pkgs[i].trim();
+        if (i > 0) {
+          sb.append("|");
+        }
         sb.append("(");
         for (int j = 0; j < pkg.length(); j++) {
           char c = pkg.charAt(j);
@@ -126,12 +129,12 @@ public class SQLMan implements SQLManMBean {
     //
     this.pattern = Pattern.compile(sb.toString());
     this.pkgs = pkgs;
-    this.map = new ConcurrentHashMap<String, ConcurrentMap<Integer, AtomicLong>>();
+    this.state = new ConcurrentHashMap<String, ConcurrentMap<Integer, AtomicLong>>();
   }
 
   private ConcurrentMap<Integer, AtomicLong> getMap(String kind)
   {
-    ConcurrentMap<Integer, AtomicLong> tmp = map.get(kind);
+    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
     if (tmp == null)
     {
       tmp = new ConcurrentHashMap<Integer, AtomicLong>();
@@ -139,7 +142,8 @@ public class SQLMan implements SQLManMBean {
       {
         tmp.put(i, new AtomicLong());
       }
-      ConcurrentMap<Integer, AtomicLong> phantom = map.putIfAbsent(kind, tmp);
+      tmp.put(-1, new AtomicLong());
+      ConcurrentMap<Integer, AtomicLong> phantom = state.putIfAbsent(kind, tmp);
       if (phantom != null)
       {
         tmp = phantom;
@@ -151,6 +155,10 @@ public class SQLMan implements SQLManMBean {
   public void log(String kind) {
     if (kind != null)
     {
+      ConcurrentMap<Integer, AtomicLong> map = getMap(kind);
+
+      //
+      AtomicLong acc = null;
       StackTraceElement[] stack = Thread.currentThread().getStackTrace();
       for (StackTraceElement frame : stack) {
         String className = frame.getClassName();
@@ -159,13 +167,21 @@ public class SQLMan implements SQLManMBean {
           for (int i = 0; i < matcher.groupCount(); i++) {
             String group = matcher.group(1 + i);
             if (group != null) {
-              AtomicLong acc = getMap(kind).get(i);
-              acc.incrementAndGet();
+              acc = map.get(i);
             }
           }
           break;
         }
       }
+
+      //
+      if (acc == null)
+      {
+        acc = map.get(-1);
+      }
+
+      //
+      acc.incrementAndGet();
     }
   }
 
@@ -176,7 +192,7 @@ public class SQLMan implements SQLManMBean {
   }
 
   public String[] getKinds() {
-    return map.keySet().toArray(EMPTY_ARRAY);
+    return state.keySet().toArray(EMPTY_ARRAY);
   }
 
   public void printReport() {
@@ -184,7 +200,7 @@ public class SQLMan implements SQLManMBean {
   }
 
   public long getCountValue(String kind, int index) {
-    ConcurrentMap<Integer, AtomicLong> tmp = map.get(kind);
+    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
     if (tmp != null)
     {
       AtomicLong ac = tmp.get(index);
@@ -198,17 +214,22 @@ public class SQLMan implements SQLManMBean {
 
   public void clear()
   {
-    map.clear();
+    state.clear();
   }
 
   public String report() {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, ConcurrentMap<Integer, AtomicLong>> entry : map.entrySet())
+    for (Map.Entry<String, ConcurrentMap<Integer, AtomicLong>> entry : state.entrySet())
     {
+      String kind = entry.getKey();
       for (int i = 0; i < pkgs.length; i++) {
         String pkg = pkgs[i];
         AtomicLong l = entry.getValue().get(i);
-        sb.append(entry.getKey()).append("/").append(pkg).append(": ").append(l.get()).append("\n");
+        sb.append(kind).append("/").append(pkg).append(": ").append(l.get()).append("\n");
+      }
+      AtomicLong uncaught = entry.getValue().get(-1);
+      if (uncaught != null) {
+        sb.append(kind).append("/*: ").append(uncaught);
       }
     }
     return sb.toString();

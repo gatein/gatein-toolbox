@@ -81,7 +81,7 @@
     <profile>
       <id>submit</id>
       <properties>
-        <sqlman.pkgs>org.exoplatform.portal.*</sqlman.pkgs>
+        <sqlman.pkgs>org.picketlink.*,org.exoplatform.portal.*,org.exoplatform.application.*,org.exoplatform.web.security.security.*,org.exoplatform.portal.gadget.core.*</sqlman.pkgs>
       </properties>
       <build>
         <plugins>
