@@ -8,11 +8,6 @@
     <artifactId>sqlman</artifactId>
     <version>1.0</version>
 
-  <properties>
-    <maven.compiler.source>5</maven.compiler.source>
-    <maven.compiler.target>5</maven.compiler.target>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -56,6 +51,14 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <target>1.5</target>
+          <source>1.5</source>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
