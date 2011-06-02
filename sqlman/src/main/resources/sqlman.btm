@@ -1,17 +1,41 @@
 HELPER org.sqlman.SQLHelper
 
-RULE SQLMan monitor PreparedStatement executeQuery
+RULE SQLMan monitor JDBC PreparedStatement executeQuery
 INTERFACE ^java.sql.PreparedStatement
 METHOD executeQuery()
 AT RETURN
 IF TRUE
-DO log("query")
+DO log("jdbcquery")
 ENDRULE
 
-RULE SQLMan monitor PreparedStatement executeUpdate
+RULE SQLMan monitor JDBC PreparedStatement executeUpdate
 INTERFACE ^java.sql.PreparedStatement
 METHOD executeUpdate()
 AT RETURN
 IF TRUE
-DO log("update")
+DO log("jdbcupdate")
+ENDRULE
+
+RULE SQLMan monitor JCR Query execute
+INTERFACE ^javax.jcr.query.Query
+METHOD execute()
+AT RETURN
+IF TRUE
+DO log("jcrquery")
+ENDRULE
+
+RULE SQLMan begin HTTP Servlet Request
+CLASS ^javax.servlet.http.HttpServlet
+METHOD service(javax.servlet.http.HttpServletRequest,javax.servlet.http.HttpServletResponse)
+AT ENTRY
+IF TRUE
+DO begin($1.getRequestURL())
+ENDRULE
+
+RULE SQLMan end HTTP Servlet Request
+CLASS ^javax.servlet.http.HttpServlet
+METHOD service(javax.servlet.http.HttpServletRequest,javax.servlet.http.HttpServletResponse)
+AT RETURN
+IF TRUE
+DO end()
 ENDRULE

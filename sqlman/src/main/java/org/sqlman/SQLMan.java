@@ -21,12 +21,6 @@ package org.sqlman;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 public class SQLMan implements SQLManMBean {
@@ -54,145 +48,62 @@ public class SQLMan implements SQLManMBean {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
-        String report = instance.report();
-        System.out.println("-= SQLMan report =-");
+        StringBuilder report = new StringBuilder("-= SQLMan aggregated report =-\n");
+        instance.shared.report(report);
         System.out.println(report);
       }
     });
   }
 
   /** . */
-  private final Pattern pattern;
+  private final Configuration config;
 
   /** . */
-  private final ConcurrentMap<String, ConcurrentMap<Integer, AtomicLong>> state;
-
-  /** . */
-  private String[] pkgs;
+  private final ConcurrentStatisticCollector shared;
 
   private SQLMan() {
-    StringBuilder sb = new StringBuilder("^");
     String pkgList = System.getProperty("sqlman.pkgs");
-    String[] pkgs;
-    if (pkgList != null) {
-      pkgs = pkgList.split("\b*,\b*");
-      for (int i = 0; i < pkgs.length; i++) {
-        String pkg = pkgs[i] = pkgs[i].trim();
-        if (i > 0) {
-          sb.append("|");
-        }
-        sb.append("(");
-        for (int j = 0; j < pkg.length(); j++) {
-          char c = pkg.charAt(j);
-          switch (c) {
-            case '*':
-              sb.append(".*");
-              break;
-            case ')':
-            case '(':
-            case '.':
-            case ',':
-            case ':':
-            case '?':
-            case '-':
-            case '+':
-            case '{':
-            case '}':
-            case '[':
-            case ']':
-            case '>':
-            case '=':
-            case '^':
-            case '$':
-            case '\\':
-              sb.append("\\");
-              sb.append(c);
-              break;
-            default:
-              sb.append(c);
-              break;
-          }
-        }
-        if (pkg.length() > 0) {
-          sb.append("\\.");
-        }
-        sb.append("[^\\.]+)");
-      }
-    }
-    else {
-      pkgs = new String[0];
-    }
-    sb.append("$");
 
     //
-
-    //
-    this.pattern = Pattern.compile(sb.toString());
-    this.pkgs = pkgs;
-    this.state = new ConcurrentHashMap<String, ConcurrentMap<Integer, AtomicLong>>();
-  }
-
-  private ConcurrentMap<Integer, AtomicLong> getMap(String kind)
-  {
-    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
-    if (tmp == null)
-    {
-      tmp = new ConcurrentHashMap<Integer, AtomicLong>();
-      for (int i = 0;i < pkgs.length;i++)
-      {
-        tmp.put(i, new AtomicLong());
-      }
-      tmp.put(-1, new AtomicLong());
-      ConcurrentMap<Integer, AtomicLong> phantom = state.putIfAbsent(kind, tmp);
-      if (phantom != null)
-      {
-        tmp = phantom;
-      }
-    }
-    return tmp;
+    this.config = new Configuration(pkgList);
+    this.shared = new ConcurrentStatisticCollector(config);
   }
 
   public void log(String kind) {
-    if (kind != null)
-    {
-      ConcurrentMap<Integer, AtomicLong> map = getMap(kind);
-
-      //
-      AtomicLong acc = null;
-      StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-      for (StackTraceElement frame : stack) {
-        String className = frame.getClassName();
-        Matcher matcher = pattern.matcher(className);
-        if (matcher.matches()) {
-          for (int i = 0; i < matcher.groupCount(); i++) {
-            String group = matcher.group(1 + i);
-            if (group != null) {
-              acc = map.get(i);
-            }
-          }
-          break;
-        }
-      }
-
-      //
-      if (acc == null)
-      {
-        acc = map.get(-1);
-      }
-
-      //
-      acc.incrementAndGet();
+    LocalStatisticCollector local = localCollector.get();
+    if (local.getDepth() > 0) {
+      local.log(kind);
+    } else {
+      shared.log(kind);
     }
+  }
+
+  private final ThreadLocal<LocalStatisticCollector> localCollector = new ThreadLocal<LocalStatisticCollector>() {
+
+    @Override
+    protected LocalStatisticCollector initialValue() {
+      return new LocalStatisticCollector(shared, config);
+    }
+  };
+
+  public void begin(Object context)
+  {
+    localCollector.get().begin(context);
+  }
+
+  public void end()
+  {
+    localCollector.get().end();
   }
 
   // MBean implementation *********************************************************************************************
 
   public String[] getPackages() {
-    return pkgs.clone();
+    return config.getPkgs().clone();
   }
 
   public String[] getKinds() {
-    return state.keySet().toArray(EMPTY_ARRAY);
+    return shared.getKinds().toArray(EMPTY_ARRAY);
   }
 
   public void printReport() {
@@ -200,38 +111,15 @@ public class SQLMan implements SQLManMBean {
   }
 
   public long getCountValue(String kind, int index) {
-    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
-    if (tmp != null)
-    {
-      AtomicLong ac = tmp.get(index);
-      if (ac != null)
-      {
-        return ac.get();
-      }
-    }
-    return -1;
+    return shared.getCountValue(kind, index);
   }
 
   public void clear()
   {
-    state.clear();
+    shared.clear();
   }
 
   public String report() {
-    StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, ConcurrentMap<Integer, AtomicLong>> entry : state.entrySet())
-    {
-      String kind = entry.getKey();
-      for (int i = 0; i < pkgs.length; i++) {
-        String pkg = pkgs[i];
-        AtomicLong l = entry.getValue().get(i);
-        sb.append(kind).append("/").append(pkg).append(": ").append(l.get()).append("\n");
-      }
-      AtomicLong uncaught = entry.getValue().get(-1);
-      if (uncaught != null) {
-        sb.append(kind).append("/*: ").append(uncaught);
-      }
-    }
-    return sb.toString();
+    return shared.report(new StringBuilder()).toString();
   }
 }

@@ -31,4 +31,14 @@ public class SQLHelper extends Helper {
   public void log(String kind) {
     SQLMan.getInstance().log(kind);
   }
+
+  public void begin(Object context)
+  {
+    SQLMan.getInstance().begin(context);
+  }
+
+  public void end()
+  {
+    SQLMan.getInstance().end();
+  }
 }
