@@ -16,6 +16,14 @@ IF TRUE
 DO log("jdbcupdate")
 ENDRULE
 
+RULE SQLMan monitor JDBC PreparedStatement execute
+INTERFACE ^java.sql.PreparedStatement
+METHOD execute()
+AT RETURN
+IF TRUE
+DO log("jdbc")
+ENDRULE
+
 RULE SQLMan monitor JCR Query execute
 INTERFACE ^javax.jcr.query.Query
 METHOD execute()

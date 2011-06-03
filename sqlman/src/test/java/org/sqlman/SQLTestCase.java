@@ -35,27 +35,41 @@ public class SQLTestCase extends TestCase {
 
   @Test
   @BMScript(dir = "src/main/resources", value = "sqlman")
-  public void testFoo() throws Exception {
+  public void testSimple() throws Exception {
+    System.setProperty("sqlman.pkgs", "org.sqlman");
+    SQLMan sqlman = SQLMan.getInstance();
+    assertEquals(-1, sqlman.getCountValue("jdbc", 0));
+    assertEquals(-1, sqlman.getCountValue("jdbcquery", 0));
+    assertEquals(-1, sqlman.getCountValue("jdbcupdate", 0));
 
+    //
     Connection conn = DriverManager.getConnection("jdbc:hsqldb:mem:test", "sa", "");
 
+    //
     PreparedStatement ps = conn.prepareStatement("CREATE TABLE FOO ( POUET INTEGER )");
-    ps.execute();
+    ps.executeUpdate();
+    assertEquals(-1, sqlman.getCountValue("jdbc", 0));
+    assertEquals(-1, sqlman.getCountValue("jdbcquery", 0));
+    assertEquals(1, sqlman.getCountValue("jdbcupdate", 0));
 
-
+    //
     PreparedStatement ps2 = conn.prepareStatement("INSERT INTO FOO (POUET) VALUES (?)");
     ps2.setInt(1, 50);
     ps2.execute();
+    assertEquals(1, sqlman.getCountValue("jdbc", 0));
+    assertEquals(-1, sqlman.getCountValue("jdbcquery", 0));
+    assertEquals(1, sqlman.getCountValue("jdbcupdate", 0));
 
+    //
     PreparedStatement ps3 = conn.prepareStatement("SELECT POUET FROM FOO");
     ResultSet rs = ps3.executeQuery();
-    while (rs.next()) {
-      System.out.println("rs.getInt(1) = " + rs.getInt(1));
-    }
+    assertTrue(rs.next());
+    assertEquals(50, rs.getInt(1));
+    assertEquals(1, sqlman.getCountValue("jdbc", 0));
+    assertEquals(1, sqlman.getCountValue("jdbcquery", 0));
+    assertEquals(1, sqlman.getCountValue("jdbcupdate", 0));
 
-
+    //
     ps.close();
-
   }
-
 }
