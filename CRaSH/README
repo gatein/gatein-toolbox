@@ -1,0 +1,10 @@
+A set of scripts for CRaSH, installation is done by copying them into CRaSH WEB-INF/groovy/commands directory
+
+Creates 100 users foo0 -> foo99:
+>user add -u foo -p password 100
+
+Assigning a membership on existing users:
+>user addmembership -m member:/platform/administrators mary john
+
+Creating a batch of users and assigning them a membership:
+>user add -u foo -p password -m member:/platform/administrators 100
