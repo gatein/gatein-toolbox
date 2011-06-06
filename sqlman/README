@@ -48,10 +48,11 @@ The sqlman.pkgs is a comma separated list of packages, that can contain wildcard
 
 -= Interract with SQLMan =-
 
-There are two ways to interract with SQLMan:
+There are several ways to interract with SQLMan, in particular obtaining statistics
 
-1/ when the JVM is shutdown, a hook will print the statistics on the console
-2/ a singleton mbean is registered against the platform mbean server named exo:service=sqlman that provides various operations such as:
+1/ when a servlet request is performed the activity local to the thread will be printed on the console
+2/ when the JVM is shutdown, a hook will print the global statistics on the console
+3/ a singleton mbean is registered against the platform mbean server named exo:service=sqlman that provides various operations such as:
 - report() : returns the current report
 - printReport() : prints the current report on the System.out stream
 - getPackages() : returns a list of the known packages
