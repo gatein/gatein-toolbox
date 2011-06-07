@@ -1,35 +1,67 @@
 HELPER org.sqlman.SQLHelper
 
-RULE SQLMan monitor JDBC PreparedStatement executeQuery
+RULE SQLMan enter JDBC PreparedStatement executeQuery
 INTERFACE ^java.sql.PreparedStatement
 METHOD executeQuery()
-AT RETURN
+AT ENTRY
 IF TRUE
-DO log("jdbcquery")
+DO enter("jdbcquery")
 ENDRULE
 
-RULE SQLMan monitor JDBC PreparedStatement executeUpdate
+RULE SQLMan leave JDBC PreparedStatement executeQuery
+INTERFACE ^java.sql.PreparedStatement
+METHOD executeQuery()
+AT EXIT
+IF TRUE
+DO leave("jdbcquery")
+ENDRULE
+
+RULE SQLMan enter JDBC PreparedStatement executeUpdate
 INTERFACE ^java.sql.PreparedStatement
 METHOD executeUpdate()
-AT RETURN
+AT ENTRY
 IF TRUE
-DO log("jdbcupdate")
+DO enter("jdbcupdate")
 ENDRULE
 
-RULE SQLMan monitor JDBC PreparedStatement execute
+RULE SQLMan leave JDBC PreparedStatement executeUpdate
+INTERFACE ^java.sql.PreparedStatement
+METHOD executeUpdate()
+AT EXIT
+IF TRUE
+DO leave("jdbcupdate")
+ENDRULE
+
+RULE SQLMan enter JDBC PreparedStatement execute
 INTERFACE ^java.sql.PreparedStatement
 METHOD execute()
-AT RETURN
+AT ENTRY
 IF TRUE
-DO log("jdbc")
+DO enter("jdbc")
 ENDRULE
 
-RULE SQLMan monitor JCR Query execute
+RULE SQLMan leave JDBC PreparedStatement execute
+INTERFACE ^java.sql.PreparedStatement
+METHOD execute()
+AT EXIT
+IF TRUE
+DO leave("jdbc")
+ENDRULE
+
+RULE SQLMan enter JCR Query execute
 INTERFACE ^javax.jcr.query.Query
 METHOD execute()
-AT RETURN
+AT ENTRY
 IF TRUE
-DO log("jcrquery")
+DO enter("jcrquery")
+ENDRULE
+
+RULE SQLMan leave JCR Query execute
+INTERFACE ^javax.jcr.query.Query
+METHOD execute()
+AT EXIT
+IF TRUE
+DO leave("jcrquery")
 ENDRULE
 
 RULE SQLMan begin HTTP Servlet Request
@@ -43,7 +75,7 @@ ENDRULE
 RULE SQLMan end HTTP Servlet Request
 CLASS ^javax.servlet.http.HttpServlet
 METHOD service(javax.servlet.http.HttpServletRequest,javax.servlet.http.HttpServletResponse)
-AT RETURN
+AT EXIT
 IF TRUE
 DO end()
 ENDRULE

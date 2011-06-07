@@ -70,11 +70,15 @@ public class SQLMan implements SQLManMBean {
   }
 
   public void log(String kind) {
+    log(kind, -1);
+  }
+
+  public void log(String kind, long millis) {
     LocalStatisticCollector local = localCollector.get();
     if (local.getDepth() > 0) {
-      local.log(kind);
+      local.log(kind, millis);
     } else {
-      shared.log(kind);
+      shared.log(kind, millis);
     }
   }
 
@@ -112,7 +116,7 @@ public class SQLMan implements SQLManMBean {
 
   public long getCountValue(String kind, int index) {
     Statistic statistic = shared.getStatistic(kind, index, false);
-    return statistic != null ? statistic.getCount() : -1;
+    return statistic != null ? statistic.getSize() : -1;
   }
 
   public void clear()

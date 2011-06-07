@@ -18,7 +18,7 @@ abstract class StatisticCollector {
 
   abstract Set<String> getKinds();
 
-  void log(String kind) {
+  void log(String kind, long millis) {
     if (kind != null)
     {
       int acc = -1;
@@ -38,7 +38,7 @@ abstract class StatisticCollector {
       }
 
       //
-      getStatistic(kind, acc, true).log();
+      getStatistic(kind, acc, true).log(millis);
     }
   }
 
@@ -51,13 +51,17 @@ abstract class StatisticCollector {
       for (int i = 0; i < pkgs.length; i++) {
         String pkg = pkgs[i];
         Statistic l = getStatistic(kind, i, false);
-        if (l != null) {
-          report.append(kind).append("/").append(pkg).append(": ").append(l.getCount()).append("\n");
+        if (l != null && l.getSize() > 0) {
+          report.append(kind).append("/").append(pkg).append(": ");
+          l.report(report);
+          report.append("\n");
         }
       }
       Statistic uncaught = getStatistic(kind, -1, false);
-      if (uncaught != null) {
-        report.append(kind).append("/*: ").append(uncaught.getCount()).append("\n");
+      if (uncaught != null && uncaught.getSize() > 0) {
+        report.append(kind).append("/*").append(": ");
+        uncaught.report(report);
+        report.append("\n");
       }
     }
     return report;

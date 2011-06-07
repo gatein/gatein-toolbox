@@ -21,6 +21,10 @@ package org.sqlman;
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 public class SQLHelper extends Helper {
 
@@ -30,6 +34,36 @@ public class SQLHelper extends Helper {
 
   public void log(String kind) {
     SQLMan.getInstance().log(kind);
+  }
+
+  private static final ThreadLocal<Map<String, AtomicLong>> time = new ThreadLocal<Map<String, AtomicLong>>() {
+    @Override
+    protected Map<String, AtomicLong> initialValue() {
+      return new HashMap<String, AtomicLong>();
+    }
+  };
+
+  public void enter(String kind) {
+    Map<String, AtomicLong> map = time.get();
+    AtomicLong a = map.get(kind);
+    if (a == null) {
+      map.put(kind, a = new AtomicLong());
+    }
+    if (a.get() > 0) {
+      throw new Error("Need to handle reentrency properly");
+    }
+    a.set(System.currentTimeMillis());
+  }
+
+  public void leave(String kind) {
+    Map<String, AtomicLong> map = time.get();
+    AtomicLong a = map.get(kind);
+    if (a == null || a.get() == 0) {
+      throw new Error("" + a);
+    }
+    long millis = System.currentTimeMillis() - a.get();
+    a.set(0);
+    SQLMan.getInstance().log(kind, millis);
   }
 
   public void begin(Object context)
