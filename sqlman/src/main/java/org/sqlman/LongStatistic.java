@@ -37,10 +37,8 @@ class LongStatistic extends AtomicLong {
   void setIfLesser(long update) {
     while (true) {
       long a = get();
-      if (update < a) {
-        if (compareAndSet(a, update)) {
-          break;
-        }
+      if (update >= a || compareAndSet(a, update)) {
+        break;
       }
     }
   }
@@ -48,10 +46,8 @@ class LongStatistic extends AtomicLong {
   void setIfGreater(long update) {
     while (true) {
       long a = get();
-      if (update > a) {
-        if (compareAndSet(a, update)) {
-          break;
-        }
+      if (update <= a || compareAndSet(a, update)) {
+        break;
       }
     }
   }

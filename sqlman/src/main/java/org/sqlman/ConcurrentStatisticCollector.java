@@ -58,8 +58,7 @@ public class ConcurrentStatisticCollector extends StatisticCollector {
   Statistic getStatistic(String kind, int index, boolean create) {
     if (!create) {
       ConcurrentMap<Integer, Statistic> tmp = state.get(kind);
-      if (tmp != null)
-      {
+      if (tmp != null) {
         return tmp.get(index);
       }
       return null;

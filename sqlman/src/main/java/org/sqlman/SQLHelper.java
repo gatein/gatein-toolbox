@@ -23,10 +23,23 @@ import org.jboss.byteman.rule.helper.Helper;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 public class SQLHelper extends Helper {
+
+  private static class Entrancy {
+
+    /** . */
+    private long timeMillis;
+
+    /** . */
+    private int depth;
+
+    private Entrancy() {
+      this.timeMillis = 0;
+      this.depth = 0;
+    }
+  }
 
   public SQLHelper(Rule rule) {
     super(rule);
@@ -36,34 +49,35 @@ public class SQLHelper extends Helper {
     SQLMan.getInstance().log(kind);
   }
 
-  private static final ThreadLocal<Map<String, AtomicLong>> time = new ThreadLocal<Map<String, AtomicLong>>() {
+  private static final ThreadLocal<Map<String, Entrancy>> time = new ThreadLocal<Map<String, Entrancy>>() {
     @Override
-    protected Map<String, AtomicLong> initialValue() {
-      return new HashMap<String, AtomicLong>();
+    protected Map<String, Entrancy> initialValue() {
+      return new HashMap<String, Entrancy>();
     }
   };
 
   public void enter(String kind) {
-    Map<String, AtomicLong> map = time.get();
-    AtomicLong a = map.get(kind);
+    Map<String, Entrancy> map = time.get();
+    Entrancy a = map.get(kind);
     if (a == null) {
-      map.put(kind, a = new AtomicLong());
+      map.put(kind, a = new Entrancy());
     }
-    if (a.get() > 0) {
-      throw new Error("Need to handle reentrency properly");
+    if (a.depth++ == 0) {
+      a.timeMillis = System.currentTimeMillis();
     }
-    a.set(System.currentTimeMillis());
   }
 
   public void leave(String kind) {
-    Map<String, AtomicLong> map = time.get();
-    AtomicLong a = map.get(kind);
-    if (a == null || a.get() == 0) {
+    Map<String, Entrancy> map = time.get();
+    Entrancy a = map.get(kind);
+    if (a == null) {
       throw new Error("" + a);
     }
-    long millis = System.currentTimeMillis() - a.get();
-    a.set(0);
-    SQLMan.getInstance().log(kind, millis);
+    if (--a.depth == 0) {
+      long millis = System.currentTimeMillis() - a.timeMillis;
+      a.timeMillis = 0;
+      SQLMan.getInstance().log(kind, millis);
+    }
   }
 
   public void begin(Object context)

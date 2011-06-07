@@ -60,7 +60,8 @@ abstract class StatisticCollector {
       }
 
       //
-      getStatistic(kind, acc, true).log(millis);
+      Statistic statistic = getStatistic(kind, acc, true);
+      statistic.log(millis);
     }
   }
 

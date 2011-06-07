@@ -51,7 +51,7 @@ public class Statistic {
 
   void log(long millis) {
     size.incrementAndGet();
-    if (millis > 0) {
+    if (millis >= 0) {
       timeMillis.addAndGet(millis);
       minMillis.setIfLesser(millis);
       maxMillis.setIfGreater(millis);
