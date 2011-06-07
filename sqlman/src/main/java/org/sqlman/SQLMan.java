@@ -111,7 +111,8 @@ public class SQLMan implements SQLManMBean {
   }
 
   public long getCountValue(String kind, int index) {
-    return shared.getCountValue(kind, index);
+    Statistic statistic = shared.getStatistic(kind, index, false);
+    return statistic != null ? statistic.getCount() : -1;
   }
 
   public void clear()

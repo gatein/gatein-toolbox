@@ -73,14 +73,14 @@ class Configuration {
     this.pkgs = pkgs;
   }
 
-  ConcurrentMap<Integer, AtomicLong> buildMap()
+  ConcurrentMap<Integer, Statistic> buildMap()
   {
-    ConcurrentMap<Integer, AtomicLong> map = new ConcurrentHashMap<Integer, AtomicLong>();
+    ConcurrentMap<Integer, Statistic> map = new ConcurrentHashMap<Integer, Statistic>();
     for (int i = 0;i < pkgs.length;i++)
     {
-      map.put(i, new AtomicLong());
+      map.put(i, new Statistic());
     }
-    map.put(-1, new AtomicLong());
+    map.put(-1, new Statistic());
     return map;
   }
 

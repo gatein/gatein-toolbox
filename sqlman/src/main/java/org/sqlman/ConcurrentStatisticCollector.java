@@ -4,28 +4,27 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 public class ConcurrentStatisticCollector extends StatisticCollector {
 
   /** . */
-  private final ConcurrentMap<String, ConcurrentMap<Integer, AtomicLong>> state;
+  private final ConcurrentMap<String, ConcurrentMap<Integer, Statistic>> state;
 
   public ConcurrentStatisticCollector(Configuration config) {
     super(config);
 
     //
-    this.state = new ConcurrentHashMap<String, ConcurrentMap<Integer, AtomicLong>>();
+    this.state = new ConcurrentHashMap<String, ConcurrentMap<Integer, Statistic>>();
   }
 
-  ConcurrentMap<Integer, AtomicLong> getMap(String kind)
+  private ConcurrentMap<Integer, Statistic> safeGetMap(String kind)
   {
-    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
+    ConcurrentMap<Integer, Statistic> tmp = state.get(kind);
     if (tmp == null)
     {
       tmp = config.buildMap();
-      ConcurrentMap<Integer, AtomicLong> phantom = state.putIfAbsent(kind, tmp);
+      ConcurrentMap<Integer, Statistic> phantom = state.putIfAbsent(kind, tmp);
       if (phantom != null)
       {
         tmp = phantom;
@@ -34,36 +33,31 @@ public class ConcurrentStatisticCollector extends StatisticCollector {
     return tmp;
   }
 
-  long getCountValue(String kind, int index) {
-    ConcurrentMap<Integer, AtomicLong> tmp = state.get(kind);
-    if (tmp != null)
-    {
-      AtomicLong ac = tmp.get(index);
-      if (ac != null)
+  Statistic getStatistic(String kind, int index, boolean create) {
+    if (!create) {
+      ConcurrentMap<Integer, Statistic> tmp = state.get(kind);
+      if (tmp != null)
       {
-        return ac.get();
+        return tmp.get(index);
       }
+      return null;
+    } else {
+      return safeGetMap(kind).get(index);
     }
-    return -1;
   }
 
   Set<String> getKinds() {
     return state.keySet();
   }
 
-  void incrementCount(String kind, int index) {
-    Map<Integer, AtomicLong> foo = getMap(kind);
-    foo.get(index).incrementAndGet();
-  }
-
   void merge(StatisticCollector collector) {
     for (String kind : collector.getKinds()) {
-      Map<Integer, AtomicLong> foo = getMap(kind);
+      Map<Integer, Statistic> foo = safeGetMap(kind);
       String[] pkgs = config.getPkgs();
       for (int i = 0; i < pkgs.length; i++) {
-        long value = collector.getCountValue(kind, i);
-        if (value > 0) {
-          foo.get(i).addAndGet(value);
+        Statistic value = collector.getStatistic(kind, i, false);
+        if (value != null) {
+          foo.get(i).merge(value);
         }
       }
     }

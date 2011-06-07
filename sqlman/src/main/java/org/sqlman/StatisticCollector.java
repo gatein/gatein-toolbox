@@ -14,11 +14,9 @@ abstract class StatisticCollector {
   }
 
 
-  abstract long getCountValue(String kind, int index);
+  abstract Statistic getStatistic(String kind, int index, boolean create);
 
   abstract Set<String> getKinds();
-
-  abstract  void incrementCount(String kind, int index);
 
   void log(String kind) {
     if (kind != null)
@@ -40,7 +38,7 @@ abstract class StatisticCollector {
       }
 
       //
-      incrementCount(kind, acc);
+      getStatistic(kind, acc, true).log();
     }
   }
 
@@ -52,14 +50,14 @@ abstract class StatisticCollector {
       String[] pkgs = config.getPkgs();
       for (int i = 0; i < pkgs.length; i++) {
         String pkg = pkgs[i];
-        long l = getCountValue(kind, i);
-        if (l > 0) {
-          report.append(kind).append("/").append(pkg).append(": ").append(l).append("\n");
+        Statistic l = getStatistic(kind, i, false);
+        if (l != null) {
+          report.append(kind).append("/").append(pkg).append(": ").append(l.getCount()).append("\n");
         }
       }
-      long uncaught = getCountValue(kind, -1);
-      if (uncaught > 0) {
-        report.append(kind).append("/*: ").append(uncaught);
+      Statistic uncaught = getStatistic(kind, -1, false);
+      if (uncaught != null) {
+        report.append(kind).append("/*: ").append(uncaught.getCount()).append("\n");
       }
     }
     return report;
