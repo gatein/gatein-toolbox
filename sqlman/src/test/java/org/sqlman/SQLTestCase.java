@@ -28,6 +28,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 @RunWith(BMUnitRunner.class)
@@ -71,5 +73,12 @@ public class SQLTestCase extends TestCase {
 
     //
     ps.close();
+
+    //
+    long v1 = sqlman.getCountValue("loadbundle", 0);
+    ResourceBundle bundle = ResourceBundle.getBundle("bundle", Locale.ENGLISH);
+    assertNotNull(bundle);
+    long v2 = sqlman.getCountValue("loadbundle", 0);
+    assertEquals(2, v2 - v1);
   }
 }

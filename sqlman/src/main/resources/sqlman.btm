@@ -1,5 +1,8 @@
 HELPER org.sqlman.SQLHelper
 
+##########################################################################
+# JDBC monitoring
+
 RULE SQLMan enter JDBC PreparedStatement executeQuery
 INTERFACE ^java.sql.PreparedStatement
 METHOD executeQuery()
@@ -48,6 +51,9 @@ IF TRUE
 DO leave("jdbc")
 ENDRULE
 
+##########################################################################
+# JCR monitoring
+
 RULE SQLMan enter JCR Query execute
 INTERFACE ^javax.jcr.query.Query
 METHOD execute()
@@ -63,6 +69,28 @@ AT EXIT
 IF TRUE
 DO leave("jcrquery")
 ENDRULE
+
+##########################################################################
+# Resource bundle monitoring
+
+RULE SQLMan enter bundle loading
+CLASS java.util.ResourceBundle
+METHOD loadBundle
+AT ENTRY
+IF TRUE
+DO enter("loadbundle")
+ENDRULE
+
+RULE SQLMan leave bundle loading
+CLASS java.util.ResourceBundle
+METHOD loadBundle
+AT EXIT
+IF TRUE
+DO leave("loadbundle")
+ENDRULE
+
+##########################################################################
+# Servlet request integration
 
 RULE SQLMan begin HTTP Servlet Request
 CLASS ^javax.servlet.http.HttpServlet
