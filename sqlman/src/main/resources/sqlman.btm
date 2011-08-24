@@ -90,6 +90,25 @@ DO leave("loadbundle")
 ENDRULE
 
 ##########################################################################
+# Groovy compilation monitoring (not unit tested)
+
+RULE SQLMan enter groovy compilation
+CLASS groovy.lang.GroovyClassLoader
+METHOD doParseClass
+AT ENTRY
+IF TRUE
+DO enter("groovycompile")
+ENDRULE
+
+RULE SQLMan groovy compilation
+CLASS groovy.lang.GroovyClassLoader
+METHOD doParseClass
+AT EXIT
+IF TRUE
+DO leave("groovycompile")
+ENDRULE
+
+##########################################################################
 # Servlet request integration
 
 RULE SQLMan begin HTTP Servlet Request
