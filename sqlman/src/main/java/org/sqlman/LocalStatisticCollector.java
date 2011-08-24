@@ -21,6 +21,7 @@ package org.sqlman;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
 class LocalStatisticCollector extends StatisticCollector {
@@ -37,6 +38,12 @@ class LocalStatisticCollector extends StatisticCollector {
   /** . */
   private final ConcurrentStatisticCollector parent;
 
+  /** . */
+  private final AtomicLong beginMillis;
+
+  /** . */
+  private final AtomicLong timeMillis;
+
   LocalStatisticCollector(ConcurrentStatisticCollector parent, Configuration config) {
     super(config);
 
@@ -44,6 +51,8 @@ class LocalStatisticCollector extends StatisticCollector {
     this.parent = parent;
     this.depth = 0;
     this.state = new HashMap<String, Map<Integer, Statistic>>();
+    this.beginMillis = new AtomicLong();
+    this.timeMillis = new AtomicLong();
   }
 
   private Map<Integer, Statistic> safeGetMap(String kind)
@@ -70,12 +79,20 @@ class LocalStatisticCollector extends StatisticCollector {
     }
   }
 
+  @Override
+  void log(String kind, long millis) {
+    super.log(kind, millis);
+    timeMillis.addAndGet(millis);
+  }
+
   Set<String> getKinds() {
     return state.keySet();
   }
 
   @Override
   void clear() {
+    timeMillis.set(0);
+    beginMillis.set(0);
     state.clear();
   }
 
@@ -86,6 +103,7 @@ class LocalStatisticCollector extends StatisticCollector {
   void begin(Object context)
   {
     if (depth++ == 0) {
+      this.beginMillis.set(System.currentTimeMillis());
       this.context = context;
     }
   }
@@ -95,10 +113,15 @@ class LocalStatisticCollector extends StatisticCollector {
     if (--depth == 0)
     {
       if (state.size() > 0) {
+        long totalMillis = System.currentTimeMillis() - beginMillis.get();
         parent.merge(this);
         StringBuilder report = new StringBuilder("-= SQLMan request report =-\n");
         if (context != null) {
-          report.append("request: ").append(context).append("\n");
+          // Compute inherent time
+          long inherentMillis = totalMillis - timeMillis.get();
+          report.append("request: ").append(context).
+            append(" time=").append(totalMillis).
+            append(" inherent=").append(inherentMillis).append("\n");
         }
         report(report);
         System.out.println(report);
