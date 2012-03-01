@@ -13,13 +13,13 @@ import java.util.Map;
 
 import javax.jcr.Session;
 
-import org.exoplatform.commons.chromattic.ChromatticManager;
 import org.exoplatform.commons.utils.PageList;
 import org.exoplatform.container.ExoContainer;
 import org.exoplatform.container.ExoContainerContext;
 import org.exoplatform.container.PortalContainer;
 import org.exoplatform.container.component.ComponentPlugin;
 import org.exoplatform.container.component.ComponentRequestLifecycle;
+import org.exoplatform.container.component.RequestLifeCycle;
 import org.exoplatform.container.configuration.ConfigurationManager;
 import org.exoplatform.container.xml.Component;
 import org.exoplatform.container.xml.ExternalComponentPlugins;
@@ -144,7 +144,7 @@ public class OrganizationListenersInitializerService implements Startable {
         
     }
 
-    public void launchAll() {
+    public void launchAll(boolean checkFolders) {
     	try {
             Session session = repositoryService.getRepository(OrganizationInitializerUtils.REPOSITORY).getSystemSession(OrganizationInitializerUtils.WORKSPACE);
             OrganizationInitializerUtils.init(session);
@@ -159,7 +159,7 @@ public class OrganizationListenersInitializerService implements Startable {
                 ((ComponentRequestLifecycle) organizationService).startRequest(PortalContainer.getInstance());
                 for (Object objectUser : users) {
                     User user = (User) objectUser;
-                    treatUser(user);
+                    treatUser(user, checkFolders);
                 }
             }
 
@@ -169,7 +169,7 @@ public class OrganizationListenersInitializerService implements Startable {
             }
             for (Object objectGroup : groups) {
                 Group group = (Group) objectGroup;
-               treatGroup(group);
+                treatGroup(group, checkFolders);
             }
             log.info("OrganizationListenersInitializerService launched successfully!");
         } catch (Exception e) {
@@ -182,9 +182,18 @@ public class OrganizationListenersInitializerService implements Startable {
     public void stop() {
     }
 
-    public void treatGroup(Group group) {
+   /**
+    * 
+    * @param group
+    * @param checkFolders
+    * @return true if no error occured and everything has been created correctly.
+    */
+    public boolean treatGroup(Group group, boolean checkFolders) {
+       boolean ok = true;
+       
+       RequestLifeCycle.begin(PortalContainer.getInstance());
     	 try {
-             if (!OrganizationInitializerUtils.hasGroupFolder(repositoryService, group)) {
+             if (!checkFolders || !OrganizationInitializerUtils.hasGroupFolder(repositoryService, group)) {
                  log.info("Group = " + group.getId());
                  Collection<GroupEventListener> groupDAOListeners = groupDAOListeners_.values();
                  for (GroupEventListener groupEventListener : groupDAOListeners) {
@@ -193,48 +202,74 @@ public class OrganizationListenersInitializerService implements Startable {
                          groupEventListener.postSave(group, true);
                      } catch (Exception e) {e.printStackTrace();
                          log.warn("Failed to initialize " + group.getId() + " Group, listener = " + groupEventListener.getClass());
+                         log.debug(e);
+                         ok = false;
                      }
                  }
              }
          } catch (Exception e) {
-             log.warn("Failed to initialize " + group.getId() + " Group listeners");
+             log.warn("Failed to initialize " + group.getId() + " Group listeners ", e);
+             ok = false;
          }
+         finally
+         {
+            RequestLifeCycle.end();
+         }       
     	
+         return ok;
     }
-    
-    
-    public void treatUser (User user) throws Exception{
+
+   /**
+    *
+    * @param user
+    * @param checkFolders
+    * @return true if no error occured and everything has been created correctly.
+    */    
+    public boolean treatUser (User user, boolean checkFolders) throws Exception {
+      boolean ok = true;
     	if (user.getCreatedDate() == null) {
             user.setCreatedDate(new Date());
         }
         if (log.isDebugEnabled()) {
             log.debug("Initialize User listener : " + user.getUserName());
         }
+
+        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
-            if (!OrganizationInitializerUtils.hasUserFolder(repositoryService, user)) {
+            if (!checkFolders || !OrganizationInitializerUtils.hasUserFolder(repositoryService, user)) {
                 log.info("User loaded ======> " + user.getUserName());
                 Collection<UserEventListener> userDAOListeners = userDAOListeners_.values();
                 for (UserEventListener userEventListener : userDAOListeners) {
-                    try {
+                    try {                        
                         userEventListener.preSave(user, true);
-                        ((ComponentRequestLifecycle) organizationService).startRequest(PortalContainer.getInstance());
                         userEventListener.postSave(user, true);
                     } catch (Exception e) {
                         log.warn("Failed to initialize " + user.getUserName() + " User with listener : " + userEventListener.getClass());
+                        log.debug(e);
+                        ok = false;
                     }
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to initialize " + user.getUserName() + " User");
+            log.warn("Failed to initialize " + user.getUserName() + " User", e);
+            ok = false;
         }
+        finally
+        {
+           RequestLifeCycle.end();
+        }        
         UserProfile userProfile = organizationService.getUserProfileHandler().findUserProfileByName(user.getUserName());
+
+        // TODO: Is this really needed? NewUserEventListener called for this user in previous step, should take care of creating UserProfile if it does not exists.
         if (userProfile == null) {
             userProfile = organizationService.getUserProfileHandler().createUserProfileInstance(user.getUserName());
             organizationService.getUserProfileHandler().saveUserProfile(userProfile, true);
             userProfile = organizationService.getUserProfileHandler().findUserProfileByName(user.getUserName());
         }
+
+        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
-            if (!OrganizationInitializerUtils.hasProfileFolder(repositoryService, userProfile)) {
+            if (!checkFolders || !OrganizationInitializerUtils.hasProfileFolder(repositoryService, userProfile)) {
                 log.info("User profile loaded ======> " + user.getUserName());
                 Collection<UserProfileEventListener> userProfileListeners = userProfileListeners_.values();
                 for (UserProfileEventListener userProfileEventListener : userProfileListeners) {
@@ -246,12 +281,21 @@ public class OrganizationListenersInitializerService implements Startable {
                         userProfileEventListener.postSave(userProfile, true);
                     } catch (Exception e) {
                         log.warn("Failed to initialize " + user.getUserName() + " User profile with listener : " + userProfileEventListener.getClass());
+                        log.debug(e);
+                        ok = false;
                     }
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to initialize " + user.getUserName() + " User profile");
+            log.warn("Failed to initialize " + user.getUserName() + " User profile", e);
+            ok = false;
         }
+        finally
+        {
+           RequestLifeCycle.end();
+        }
+
+        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
             Collection memberships = organizationService.getMembershipHandler().findMembershipsByUser(user.getUserName());
             if (log.isDebugEnabled()) {
@@ -260,7 +304,7 @@ public class OrganizationListenersInitializerService implements Startable {
             for (Object objectMembership : memberships) {
                 Membership membership = (Membership) objectMembership;
                 try {
-                    if (!OrganizationInitializerUtils.hasMembershipFolder(repositoryService, membership)) {
+                    if (!checkFolders || !OrganizationInitializerUtils.hasMembershipFolder(repositoryService, membership)) {
                         log.info("Membership loaded = " + membership.getId());
                         Collection<MembershipEventListener> membershipDAOListeners = membershipDAOListeners_.values();
                         for (MembershipEventListener membershipEventListener : membershipDAOListeners) {
@@ -269,17 +313,27 @@ public class OrganizationListenersInitializerService implements Startable {
                                 membershipEventListener.postSave(membership, true);
                             } catch (Exception e) {
                                 log.warn("Failed to initialize " + user.getUserName() + " Membership (" + membership.getId() + ") listener = " + membershipEventListener.getClass());
+                                log.debug(e);
+                                ok = false;
                             }
                         }
                     }
                 } catch (Exception e) {
                     log.warn("Failed to initialize " + user.getUserName() + " Membership (" + membership.getId() + ")");
+                    log.debug(e);
+                    ok = false;
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to initialize " + user.getUserName() + " Memberships listeners");
+            log.warn("Failed to initialize " + user.getUserName() + " Memberships listeners", e);
+            ok = false;
         }
-    	
+        finally
+        {
+          RequestLifeCycle.end();
+        }
+       
+        return ok;
     }
     
     public synchronized void addListenerPlugin(ComponentPlugin listener) throws Exception {

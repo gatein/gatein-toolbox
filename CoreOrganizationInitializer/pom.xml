@@ -11,11 +11,15 @@
 		<maven.compiler.target>1.5</maven.compiler.target>
 	</properties>
 	<dependencies>
+
+      <!-- Dependency on portal codebase not needed -->
+		<!--
 		<dependency>
 			<groupId>org.exoplatform.portal</groupId>
 			<artifactId>exo.portal.component.common</artifactId>
 			<version>3.1.7-PLF</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>org.exoplatform.jcr</groupId>
 			<artifactId>exo.jcr.component.ext</artifactId>

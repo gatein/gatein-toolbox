@@ -38,7 +38,7 @@ public class OrganizationInitializerJob extends BaseJob {
       ExoContainer container = ExoContainerContext.getCurrentContainer();
       organizationListenersInitializerService_ = (OrganizationListenersInitializerService) container.getComponentInstanceOfType(OrganizationListenersInitializerService.class);
     }
-    organizationListenersInitializerService_.launchAll();
+    organizationListenersInitializerService_.launchAll(true);
     LOG.info("Organization Listeners Initializer job done");
   }
 }
