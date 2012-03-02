@@ -32,6 +32,7 @@ import org.exoplatform.services.organization.GroupEventListener;
 import org.exoplatform.services.organization.Membership;
 import org.exoplatform.services.organization.MembershipEventListener;
 import org.exoplatform.services.organization.OrganizationService;
+import org.exoplatform.services.organization.Query;
 import org.exoplatform.services.organization.User;
 import org.exoplatform.services.organization.UserEventListener;
 import org.exoplatform.services.organization.UserProfile;
@@ -46,6 +47,7 @@ public class OrganizationListenersInitializerService implements Startable {
     private Map<String, UserProfileEventListener> userProfileListeners_;
     private OrganizationService organizationService;
     private RepositoryService repositoryService;
+    private boolean executeAllListenersDuringBoot;
     private Log log = ExoLogger.getLogger(this.getClass());
 
     public OrganizationListenersInitializerService(OrganizationService organizationService, RepositoryService repositoryService, ConfigurationManager manager, InitParams initParams) {
@@ -93,6 +95,7 @@ public class OrganizationListenersInitializerService implements Startable {
         OrganizationInitializerUtils.REPOSITORY = initParams.getValueParam("repository").getValue();
         OrganizationInitializerUtils.WORKSPACE = initParams.getValueParam("workspace").getValue();
         OrganizationInitializerUtils.HOME_PATH = initParams.getValueParam("homePath").getValue();
+        this.executeAllListenersDuringBoot =  Boolean.parseBoolean(initParams.getValueParam("executeAllListenersDuringBoot").getValue());
     }
 
     private static final Comparator<org.exoplatform.container.xml.ComponentPlugin> COMPARATOR = new Comparator<org.exoplatform.container.xml.ComponentPlugin>() {
@@ -140,26 +143,64 @@ public class OrganizationListenersInitializerService implements Startable {
         return null;
     }
 
-    public void start() {
-        
+    public void start() 
+    {
+      if (executeAllListenersDuringBoot)
+      {
+         log.info("Going to execute listeners for all users and groups");
+         RequestLifeCycle.begin(PortalContainer.getInstance());
+
+         try
+         {
+            // TODO: Make checkFolders configurable through startup parameters? Or try existence of JCR workspace?
+            boolean checkFolders = true;
+
+            this.launchAll(checkFolders);
+         }
+         finally
+         {
+            RequestLifeCycle.end();
+         }
+      }
+      else
+      {
+         log.info("Skipped executing of listeners");
+      }
     }
 
-    public void launchAll(boolean checkFolders) {
+
+   /**
+    * @param checkFolders whether to check folders in OrganizationInitializerUtils or not. If folders are not checked, we simply trigger all listeners for users and groups.
+    * @return true if no error occured and everything has been created correctly.
+    */
+    public boolean launchAll(boolean checkFolders) {
+
+      boolean ok = true;
     	try {
-            Session session = repositoryService.getRepository(OrganizationInitializerUtils.REPOSITORY).getSystemSession(OrganizationInitializerUtils.WORKSPACE);
-            OrganizationInitializerUtils.init(session);
-            log.info("Start OrganizationListenersInitializerService");
-            PageList pageList = organizationService.getUserHandler().getUserPageList(10);
+            log.info("Launch OrganizationListenersInitializerService with checkFolders=" + checkFolders);
+          
+            if (checkFolders)
+            {
+              Session session = repositoryService.getRepository(OrganizationInitializerUtils.REPOSITORY).getSystemSession(OrganizationInitializerUtils.WORKSPACE);
+              OrganizationInitializerUtils.init(session);
+            }
+            
+            PageList pageList = organizationService.getUserHandler().findUsers(new Query());
             int pagesNumber = pageList.getAvailablePage();
             for (int i = 1; i <= pagesNumber; i++) {
                 List users = pageList.getPage(i);
                 if (log.isDebugEnabled()) {
                     log.debug("Number of users = " + users.size());
                 }
-                ((ComponentRequestLifecycle) organizationService).startRequest(PortalContainer.getInstance());
+
                 for (Object objectUser : users) {
                     User user = (User) objectUser;
-                    treatUser(user, checkFolders);
+                    boolean userOk = treatUser(user, checkFolders);
+
+                    if (!userOk)
+                    {
+                       ok = false;
+                    }
                 }
             }
 
@@ -169,29 +210,43 @@ public class OrganizationListenersInitializerService implements Startable {
             }
             for (Object objectGroup : groups) {
                 Group group = (Group) objectGroup;
-                treatGroup(group, checkFolders);
+                boolean groupOk = treatGroup(group, checkFolders);
+
+                if (!groupOk)
+                {
+                   ok = false;
+                }
             }
             log.info("OrganizationListenersInitializerService launched successfully!");
         } catch (Exception e) {
             StringWriter writer = new StringWriter();
             e.printStackTrace(new PrintWriter(writer));
             log.error(writer.toString());
+            ok = false;
         }
+
+        return ok;
     }
-    
+
+
     public void stop() {
     }
+
 
    /**
     * 
     * @param group
-    * @param checkFolders
+    * @param checkFolders whether to check folders in OrganizationInitializerUtils or not. If folders are not checked, we simply trigger all listeners for group.
     * @return true if no error occured and everything has been created correctly.
     */
     public boolean treatGroup(Group group, boolean checkFolders) {
-       boolean ok = true;
        
-       RequestLifeCycle.begin(PortalContainer.getInstance());
+       boolean ok = true;
+       if (log.isDebugEnabled())
+       {
+         log.debug("Initialize Group listener : " + group.getId() + ", checkFolders=" + checkFolders);
+       }
+       
     	 try {
              if (!checkFolders || !OrganizationInitializerUtils.hasGroupFolder(repositoryService, group)) {
                  log.info("Group = " + group.getId());
@@ -210,10 +265,6 @@ public class OrganizationListenersInitializerService implements Startable {
          } catch (Exception e) {
              log.warn("Failed to initialize " + group.getId() + " Group listeners ", e);
              ok = false;
-         }
-         finally
-         {
-            RequestLifeCycle.end();
          }       
     	
          return ok;
@@ -222,19 +273,20 @@ public class OrganizationListenersInitializerService implements Startable {
    /**
     *
     * @param user
-    * @param checkFolders
+    * @param checkFolders whether to check folders in OrganizationInitializerUtils or not. If folders are not checked, we simply trigger all listeners for user, userProfile and all his memberships.
     * @return true if no error occured and everything has been created correctly.
     */    
-    public boolean treatUser (User user, boolean checkFolders) throws Exception {
+    public boolean treatUser (User user, boolean checkFolders) {
+       
       boolean ok = true;
+       
     	if (user.getCreatedDate() == null) {
             user.setCreatedDate(new Date());
         }
         if (log.isDebugEnabled()) {
-            log.debug("Initialize User listener : " + user.getUserName());
+            log.debug("Initialize User listener : " + user.getUserName() + ", checkFolders=" + checkFolders);
         }
 
-        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
             if (!checkFolders || !OrganizationInitializerUtils.hasUserFolder(repositoryService, user)) {
                 log.info("User loaded ======> " + user.getUserName());
@@ -254,20 +306,25 @@ public class OrganizationListenersInitializerService implements Startable {
             log.warn("Failed to initialize " + user.getUserName() + " User", e);
             ok = false;
         }
-        finally
-        {
-           RequestLifeCycle.end();
-        }        
-        UserProfile userProfile = organizationService.getUserProfileHandler().findUserProfileByName(user.getUserName());
 
-        // TODO: Is this really needed? NewUserEventListener called for this user in previous step, should take care of creating UserProfile if it does not exists.
-        if (userProfile == null) {
-            userProfile = organizationService.getUserProfileHandler().createUserProfileInstance(user.getUserName());
-            organizationService.getUserProfileHandler().saveUserProfile(userProfile, true);
+        UserProfile userProfile = null;
+        try
+        {
             userProfile = organizationService.getUserProfileHandler().findUserProfileByName(user.getUserName());
+
+            // TODO: Is this really needed? NewUserEventListener called for this user in previous step, should take care of creating UserProfile if it does not exists.
+            if (userProfile == null) {
+                  userProfile = organizationService.getUserProfileHandler().createUserProfileInstance(user.getUserName());
+                  organizationService.getUserProfileHandler().saveUserProfile(userProfile, true);
+                  userProfile = organizationService.getUserProfileHandler().findUserProfileByName(user.getUserName());
+            }
+        }
+        catch (Exception e)
+        {
+           log.warn("Failed to load user profile for " + user.getUserName() + " User", e);
+           ok = false;
         }
 
-        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
             if (!checkFolders || !OrganizationInitializerUtils.hasProfileFolder(repositoryService, userProfile)) {
                 log.info("User profile loaded ======> " + user.getUserName());
@@ -290,12 +347,7 @@ public class OrganizationListenersInitializerService implements Startable {
             log.warn("Failed to initialize " + user.getUserName() + " User profile", e);
             ok = false;
         }
-        finally
-        {
-           RequestLifeCycle.end();
-        }
 
-        RequestLifeCycle.begin(PortalContainer.getInstance());
         try {
             Collection memberships = organizationService.getMembershipHandler().findMembershipsByUser(user.getUserName());
             if (log.isDebugEnabled()) {
@@ -327,10 +379,6 @@ public class OrganizationListenersInitializerService implements Startable {
         } catch (Exception e) {
             log.warn("Failed to initialize " + user.getUserName() + " Memberships listeners", e);
             ok = false;
-        }
-        finally
-        {
-          RequestLifeCycle.end();
         }
        
         return ok;

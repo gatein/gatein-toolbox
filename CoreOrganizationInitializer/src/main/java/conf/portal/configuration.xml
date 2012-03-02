@@ -9,20 +9,28 @@
 			</value-param>
 			<value-param>
 				<name>workspace</name>
-				<value>collaboration</value>
+				<value>portal-system</value>
 			</value-param>
 			<value-param>
 				<name>homePath</name>
 				<value>/</value>
 			</value-param>
+         <value-param>
+            <name>executeAllListenersDuringBoot</name>
+            <value>true</value>
+         </value-param>
 		</init-params>
 	</component>
-	<component>
+
+   <component>
 		<type>org.exoplatform.core.component.organization.initializer.RestOrganizationInitializer</type>
 	</component>
+
+   <component>
+      <type>org.exoplatform.core.component.organization.initializer.JMXOrganizationInitializer</type>
+   </component>
 	
    <!-- Listeners are needed only for SitePublisher as normally workspace "collaboration" doesn't exist in EPP -->
-	<!--
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.organization.OrganizationService</target-component>
 		<component-plugin>
@@ -50,9 +58,7 @@
 			<description>description</description>
 		</component-plugin>
 	</external-component-plugins>
-	-->
 
-   <!-- TODO: This should be probably commented as well to avoid perf-expensive calls to OrganizationListenersInitializerService.launchAll() -->
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.scheduler.JobSchedulerService</target-component>
 		<component-plugin>

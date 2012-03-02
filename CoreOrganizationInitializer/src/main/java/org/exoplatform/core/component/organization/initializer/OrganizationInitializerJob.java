@@ -18,6 +18,8 @@ package org.exoplatform.core.component.organization.initializer;
 
 import org.exoplatform.container.ExoContainer;
 import org.exoplatform.container.ExoContainerContext;
+import org.exoplatform.container.PortalContainer;
+import org.exoplatform.container.component.RequestLifeCycle;
 import org.exoplatform.services.log.ExoLogger;
 import org.exoplatform.services.log.Log;
 import org.exoplatform.services.scheduler.BaseJob;
@@ -38,7 +40,21 @@ public class OrganizationInitializerJob extends BaseJob {
       ExoContainer container = ExoContainerContext.getCurrentContainer();
       organizationListenersInitializerService_ = (OrganizationListenersInitializerService) container.getComponentInstanceOfType(OrganizationListenersInitializerService.class);
     }
-    organizationListenersInitializerService_.launchAll(true);
+
+    RequestLifeCycle.begin(PortalContainer.getInstance());
+
+    try
+    {
+       // TODO: Make checkFolders configurable through startup parameters? Or try existence of JCR workspace?
+       boolean checkFolders = true;
+
+       organizationListenersInitializerService_.launchAll(checkFolders);
+    }
+    finally
+    {
+       RequestLifeCycle.end();
+    }
+
     LOG.info("Organization Listeners Initializer job done");
   }
 }
