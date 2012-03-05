@@ -240,7 +240,13 @@ public class OrganizationListenersInitializerService implements Startable {
     * @return true if no error occured and everything has been created correctly.
     */
     public boolean treatGroup(Group group, boolean checkFolders) {
-       
+
+       if (group == null)
+       {
+          log.error("Group is null. This group likely does not exist.");
+          return false;
+       }
+
        boolean ok = true;
        if (log.isDebugEnabled())
        {
@@ -277,7 +283,12 @@ public class OrganizationListenersInitializerService implements Startable {
     * @return true if no error occured and everything has been created correctly.
     */    
     public boolean treatUser (User user, boolean checkFolders) {
-       
+      if (user == null)
+      {
+         log.error("User is null. This user likely does not exist.");
+         return false;
+      }
+
       boolean ok = true;
        
     	if (user.getCreatedDate() == null) {
