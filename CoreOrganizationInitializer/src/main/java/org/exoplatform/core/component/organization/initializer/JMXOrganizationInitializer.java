@@ -1,5 +1,6 @@
 package org.exoplatform.core.component.organization.initializer;
 
+import org.exoplatform.container.ExoContainer;
 import org.exoplatform.container.ExoContainerContext;
 import org.exoplatform.container.PortalContainer;
 import org.exoplatform.container.component.RequestLifeCycle;
@@ -37,10 +38,15 @@ public class JMXOrganizationInitializer implements Startable
    private Log log = ExoLogger.getLogger(this.getClass());
    private OrganizationService orgService_;
 
+   // TODO: We need this as workaround to handle bug https://issues.jboss.org/browse/EXOJCR-1791 as during client calls, 
+   // we need to add this container to context. It should be removed when EXOJCR-1791 will be fixed.
+   private ExoContainer exoContainer;
 
-   public JMXOrganizationInitializer(
+
+   public JMXOrganizationInitializer(ExoContainerContext exoContainerContext,
          OrganizationListenersInitializerService organizationListenersInitializerService, OrganizationService orgService)
    {
+      this.exoContainer = exoContainerContext.getContainer();
       this.initializerService = organizationListenersInitializerService;
       this.orgService_=orgService;
    }
@@ -50,25 +56,19 @@ public class JMXOrganizationInitializer implements Startable
    @Impact(ImpactType.WRITE)
    public String launchAllListeners(@ManagedDescription("Check JCR Folders") @ManagedName("checkFolders") Boolean checkFolders)
    {
-      boolean lifecycleStarted = false;
-      if (ExoContainerContext.getCurrentContainer() == null)
-      {
-         RequestLifeCycle.begin(PortalContainer.getInstance());
-         lifecycleStarted = true;
-      }
+      // TODO: We need to encapsulate call within correct portal container by ourselves because JMX kernel layer is not doing it
+      ExoContainer oldContainer = ExoContainerContext.getCurrentContainer();      
 
-      try
+      try            
       {
+         ExoContainerContext.setCurrentContainer(this.exoContainer);
          boolean ok = initializerService.launchAll(checkFolders);
          String responseString = ok ? "All listeners executed successfuly." : "Error occured during execution of listeners.";
          return responseString;
       }
       finally 
       {
-         if (lifecycleStarted)
-         {
-            RequestLifeCycle.end();
-         }
+         ExoContainerContext.setCurrentContainer(oldContainer);
       }
    }
 
@@ -86,15 +86,11 @@ public class JMXOrganizationInitializer implements Startable
    {
       UserHandler userHandler = orgService_.getUserHandler();
       User user;
-      boolean lifecycleStarted = false;
-      if (ExoContainerContext.getCurrentContainer() == null)
-      {
-         RequestLifeCycle.begin(PortalContainer.getInstance());
-         lifecycleStarted = true;
-      }
+      ExoContainer oldContainer = ExoContainerContext.getCurrentContainer();
 
       try
       {
+         ExoContainerContext.setCurrentContainer(this.exoContainer);
          user = userHandler.findUserByName(userName);
          boolean ok = initializerService.treatUser(user, checkFolders);
          String responseString = ok ? "User listeners executed successfuly." : "Error occured during execution of user listeners.";
@@ -107,10 +103,7 @@ public class JMXOrganizationInitializer implements Startable
       }
       finally
       {
-         if (lifecycleStarted)
-         {
-            RequestLifeCycle.end();
-         }
+         ExoContainerContext.setCurrentContainer(oldContainer);
       }
    }
 
@@ -122,15 +115,11 @@ public class JMXOrganizationInitializer implements Startable
    {
       GroupHandler groupHandler = orgService_.getGroupHandler();
       Group group;
-      boolean lifecycleStarted = false;
-      if (ExoContainerContext.getCurrentContainer() == null)
-      {
-         RequestLifeCycle.begin(PortalContainer.getInstance());
-         lifecycleStarted = true;
-      }
+      ExoContainer oldContainer = ExoContainerContext.getCurrentContainer();
 
       try
       {
+         ExoContainerContext.setCurrentContainer(this.exoContainer);
          group = groupHandler.findGroupById(groupName);
          boolean ok = initializerService.treatGroup(group, checkFolders);
          String responseString = ok ? "Group listeners executed successfuly." : "Error occured during execution of group listeners.";
@@ -143,10 +132,7 @@ public class JMXOrganizationInitializer implements Startable
       }
       finally
       {
-         if (lifecycleStarted)
-         {
-            RequestLifeCycle.end();
-         }
+         ExoContainerContext.setCurrentContainer(oldContainer);
       }
    }
 
