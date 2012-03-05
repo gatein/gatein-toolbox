@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <configuration>
+
 	<component>
 		<type>org.exoplatform.core.component.organization.initializer.OrganizationListenersInitializerService</type>
 		<init-params>
@@ -29,8 +30,7 @@
    <component>
       <type>org.exoplatform.core.component.organization.initializer.JMXOrganizationInitializer</type>
    </component>
-	
-   <!-- Listeners are needed only for SitePublisher as normally workspace "collaboration" doesn't exist in EPP -->
+
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.organization.OrganizationService</target-component>
 		<component-plugin>
@@ -58,6 +58,36 @@
 			<description>description</description>
 		</component-plugin>
 	</external-component-plugins>
+
+   <external-component-plugins>
+      <target-component>org.exoplatform.web.filter.ExtensibleFilter</target-component>
+      <component-plugin>
+         <name>TriggerInitializerFilter</name>
+         <set-method>addFilterDefinitions</set-method>
+         <type>org.exoplatform.web.filter.FilterDefinitionPlugin</type>
+         <init-params>
+            <object-param>
+               <name>Trigger Initializer filter definition</name>
+               <object type="org.exoplatform.web.filter.FilterDefinition">
+                  <field name="filter">
+                     <object type="org.exoplatform.core.component.organization.initializer.TriggerInitializerFilter">
+                        <field name="checkFolders"><boolean>true</boolean></field>
+                        <field name="triggerListenersForGroups"><boolean>true</boolean></field>
+                     </object>
+                  </field>
+                  <!-- WARNING: the mapping is expressed with regular expressions -->
+                  <field name="patterns">
+                     <collection type="java.util.ArrayList" item-type="java.lang.String">
+                        <value>
+                           <string>/.*</string>
+                        </value>
+                     </collection>
+                  </field>
+               </object>
+            </object-param>
+         </init-params>
+      </component-plugin>
+   </external-component-plugins>
 
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.scheduler.JobSchedulerService</target-component>
