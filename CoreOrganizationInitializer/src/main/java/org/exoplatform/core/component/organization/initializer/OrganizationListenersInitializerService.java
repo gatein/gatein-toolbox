@@ -308,7 +308,7 @@ public class OrganizationListenersInitializerService implements Startable {
                         userEventListener.postSave(user, true);
                     } catch (Exception e) {
                         log.warn("Failed to initialize " + user.getUserName() + " User with listener : " + userEventListener.getClass());
-                        log.debug(e);
+                        log.debug("", e);
                         ok = false;
                     }
                 }

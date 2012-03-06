@@ -67,19 +67,19 @@ of your portal can be time consuming. So you may want to disable triggering this
 2) Login of user
 
 There is possibility to trigger operation "treatUser" for particular user after login of this user. This is really cool and recommended way,
-as objects are created on demand for this user and it's not needed to sync in other way. If you want to disable it (not recommended) you can do it
+as objects are created automagically for this user and it's not needed from admin to perform other actions. If you want to disable it (not recommended) you can do it
 by commenting whole part with ExtensibleFilter. There are some configuration parameters of ExtensibleFilter:
 - checkFolders - already described above
 
 - triggerListenersForGroups - If true, it will check groups of the user and it will call "treatGroup" for every group of user. If false, groups are not checked.
-Default and recommended value of "triggerListenersForGroups" param is true.
+Default and recommended value of "triggerListenersForGroups" parameter is true.
 
 
 3) Trigger operations on demand through JMX
 You can trigger operations through JMX this way:
 - Go to http://localhost:8080/jmx-console (supported only on JBoss)
 - In domain "exo" look for MBean name=OrganizationInitializerService,portal="portal",service=OrganizationInitializerService
-or for MBean name=plidmcache,portal="ecmdemo",service=PicketLinkIDMCacheService if you are using EPP-SP and portal container "ecmdemo"
+or for MBean name=OrganizationInitializerService,portal="ecmdemo",service=OrganizationInitializerService if you are using EPP-SP and portal container "ecmdemo"
 (or other name if you have completely different portal container)
 
 Now you should see all operations "launchAll", "treatUser", "treatGroup", which you can trigger.
