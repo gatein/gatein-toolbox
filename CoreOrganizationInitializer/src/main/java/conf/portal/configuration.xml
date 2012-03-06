@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <configuration>
 
+   <!-- Main configuration of service -->
 	<component>
 		<type>org.exoplatform.core.component.organization.initializer.OrganizationListenersInitializerService</type>
 		<init-params>
@@ -23,14 +24,17 @@
 		</init-params>
 	</component>
 
+   <!-- Possibility to trigger operations through REST -->
    <component>
 		<type>org.exoplatform.core.component.organization.initializer.RestOrganizationInitializer</type>
 	</component>
 
+   <!-- Possibility to trigger operations through JMX -->
    <component>
       <type>org.exoplatform.core.component.organization.initializer.JMXOrganizationInitializer</type>
    </component>
 
+   <!-- Listeners for creating marker JCR folders -->
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.organization.OrganizationService</target-component>
 		<component-plugin>
@@ -59,6 +63,7 @@
 		</component-plugin>
 	</external-component-plugins>
 
+   <!-- Trigger listeners for particular user after his login -->
    <external-component-plugins>
       <target-component>org.exoplatform.web.filter.ExtensibleFilter</target-component>
       <component-plugin>
@@ -75,7 +80,6 @@
                         <field name="triggerListenersForGroups"><boolean>true</boolean></field>
                      </object>
                   </field>
-                  <!-- WARNING: the mapping is expressed with regular expressions -->
                   <field name="patterns">
                      <collection type="java.util.ArrayList" item-type="java.lang.String">
                         <value>
@@ -89,6 +93,7 @@
       </component-plugin>
    </external-component-plugins>
 
+   <!-- Trigger all listeners periodically -->
 	<external-component-plugins>
 		<target-component>org.exoplatform.services.scheduler.JobSchedulerService</target-component>
 		<component-plugin>
