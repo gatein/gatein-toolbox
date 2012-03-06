@@ -56,7 +56,7 @@ public class JMXOrganizationInitializer implements Startable
    @Impact(ImpactType.WRITE)
    public String launchAllListeners(@ManagedDescription("Check JCR Folders") @ManagedName("checkFolders") Boolean checkFolders)
    {
-      // TODO: We need to encapsulate call within correct portal container by ourselves because JMX kernel layer is not doing it
+      // TODO: We need to encapsulate call within correct portal container by ourselves because JMX kernel layer is not doing it (Workaround for EXOJCR-1791)
       ExoContainer oldContainer = ExoContainerContext.getCurrentContainer();      
 
       try            
