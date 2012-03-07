@@ -126,3 +126,24 @@ AT EXIT
 IF TRUE
 DO end()
 ENDRULE
+
+#############################################################################
+# Portlet render request integration
+
+RULE SQLMan begin Portlet Render Request
+CLASS ^javax.portlet.GenericPortlet
+METHOD render(javax.portlet.RenderRequest,javax.portlet.RenderResponse)
+AT ENTRY
+IF TRUE
+DO enter("portletrender")
+ENDRULE
+
+RULE SQLMan end Portlet Render Request
+CLASS ^javax.portlet.GenericPortlet
+METHOD render(javax.portlet.RenderRequest,javax.portlet.RenderResponse)
+AT EXIT
+IF TRUE
+DO leave("portletrender")
+ENDRULE
+
+########################################################################
