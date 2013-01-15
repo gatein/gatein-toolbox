@@ -11,3 +11,7 @@ A generator for deployment descriptors
 -= SQLMan =-
 
 A monitor for queries (jdbc/jcr) based on JBoss Byteman
+
+-= data-injector =-
+
+A set of service components used for generating GateIn dataset
