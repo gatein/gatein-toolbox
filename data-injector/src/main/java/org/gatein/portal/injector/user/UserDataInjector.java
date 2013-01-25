@@ -39,148 +39,114 @@ import org.gatein.portal.injector.AbstractInjector;
 /**
  * @author <a href="mailto:trongson.tran1228@gmail.com">Son Tran Trong</a>
  * @version $Id$
- * 
- * The <code>UserDataInjector</code> class represents service generating and injecting users to GateIn.
- * The service can be accessed via JMX (MBean: exo/userDataInject/portal/userInjector) or REST
- *
+ *          <p/>
+ *          The <code>UserDataInjector</code> class represents service generating and injecting users to GateIn.
+ *          The service can be accessed via JMX (MBean: exo/userDataInject/portal/userInjector) or REST
  */
 
 @Managed
 @ManagedDescription("User data injector")
 @NameTemplate({@Property(key = "view", value = "portal")
-               ,@Property(key = "service", value = "userInjector")
-               ,@Property(key = "type", value = "userDataInject")})
+        , @Property(key = "service", value = "userInjector")
+        , @Property(key = "type", value = "userDataInject")})
 @RESTEndpoint(path = "userInjector")
-public class UserDataInjector extends AbstractInjector
-{
-   private static Logger LOG = LoggerFactory.getLogger(UserDataInjector.class);
+public class UserDataInjector extends AbstractInjector {
+    private static Logger LOG = LoggerFactory.getLogger(UserDataInjector.class);
 
-   private OrganizationService orgService;
+    private OrganizationService orgService;
 
-   public UserDataInjector(OrganizationService orgService)
-   {
-      this.orgService = orgService;
-   }
-   
-   public Logger getLogger()
-   {
-      return LOG;
-   }
+    public UserDataInjector(OrganizationService orgService) {
+        this.orgService = orgService;
+    }
 
-   public void createUser(String userName, String password, String email, String firstName, String lastName) throws Exception
-   {
-      boolean newUser = false;
-      User user = orgService.getUserHandler().findUserByName(userName);
-      if (user == null)
-      {
-         user = orgService.getUserHandler().createUserInstance(userName);
-         newUser = true;
-      }
-      user.setPassword(password);
-      user.setEmail(email);
-      user.setFirstName(firstName);
-      user.setLastName(lastName);
+    public Logger getLogger() {
+        return LOG;
+    }
 
-      if (newUser)
-      {
-         orgService.getUserHandler().createUser(user, true);
-         return;
+    public void createUser(String userName, String password, String email, String firstName, String lastName) throws Exception {
+        boolean newUser = false;
+        User user = orgService.getUserHandler().findUserByName(userName);
+        if (user == null) {
+            user = orgService.getUserHandler().createUserInstance(userName);
+            newUser = true;
+        }
+        user.setPassword(password);
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
 
-      }
-      orgService.getUserHandler().saveUser(user, true);
-   }
+        if (newUser) {
+            orgService.getUserHandler().createUser(user, true);
+            return;
 
-   /**
-    * Generate users data for Gatein
-    * 
-    * @param userName
-    * The default userName
-    * 
-    * @param startIndex
-    * The startIndex and the endIndex are used to generate a number of users, such as userName_0, userName_1, userName_n
-    * 
-    * @param endIndex
-    * The end of index
-    * 
-    * @param password
-    * The password of user. If not set, it will be the default: 123456
-    */
-   @Managed
-   @ManagedDescription("Create amount of new users")
-   @Impact(ImpactType.READ)
-   public void createListUsers(@ManagedDescription("User name") @ManagedName("userName") String userName
-      ,@ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
-      ,@ManagedDescription("End index") @ManagedName("endIndex") String endIndex
-      ,@ManagedDescription("if not specific it will be default 123456") @ManagedName("password") String password)
-   {
-      try
-      {
-         if (password == null || password.trim().length() == 0)
-         {
-            password = new String("123456");
-         }
-         int sIndex = Integer.parseInt(startIndex);
-         int eIndex = Integer.parseInt(endIndex);
-         userName = userName.trim();
-         password = password.trim();
-         startTransaction();
-         for (int i = sIndex; i <= eIndex; i++)
-         {
-            String userNameTemp = userName + "_" + i;
-            createUser(userNameTemp, password, userNameTemp + "@localhost", userNameTemp, userNameTemp);
-         }
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-         LOG.error("Create users fail. Please check your inputs");
-      }
-      finally
-      {
-         endTransaction();
-      }
+        }
+        orgService.getUserHandler().saveUser(user, true);
+    }
 
-   }
+    /**
+     * Generate users data for Gatein
+     *
+     * @param userName   The default userName
+     * @param startIndex The startIndex and the endIndex are used to generate a number of users, such as userName_0, userName_1, userName_n
+     * @param endIndex   The end of index
+     * @param password   The password of user. If not set, it will be the default: 123456
+     */
+    @Managed
+    @ManagedDescription("Create amount of new users")
+    @Impact(ImpactType.READ)
+    public void createListUsers(@ManagedDescription("User name") @ManagedName("userName") String userName
+            , @ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
+            , @ManagedDescription("End index") @ManagedName("endIndex") String endIndex
+            , @ManagedDescription("if not specific it will be default 123456") @ManagedName("password") String password) {
+        try {
+            if (password == null || password.trim().length() == 0) {
+                password = new String("123456");
+            }
+            int sIndex = Integer.parseInt(startIndex);
+            int eIndex = Integer.parseInt(endIndex);
+            userName = userName.trim();
+            password = password.trim();
+            startTransaction("create new users");
+            for (int i = sIndex; i <= eIndex; i++) {
+                String userNameTemp = userName + "_" + i;
+                createUser(userNameTemp, password, userNameTemp + "@localhost", userNameTemp, userNameTemp);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("Create users fail. Please check your inputs");
+        } finally {
+            endTransaction("create new users");
+        }
 
-   /**
-    * Remove a list of users
-    * 
-    * @param userName
-    * The default user name
-    * 
-    * @param startIndex
-    * The startIndex and the endIndex are used to generate a number of users that need to be removed, 
-    * such as userName_0, userName_1, userName_n.
-    * 
-    * @param endIndex
-    * The end of index
-    */
-   @Managed
-   @ManagedDescription("remove amount of users")
-   @Impact(ImpactType.READ)
-   public void removeListUsers(@ManagedDescription("user name") @ManagedName("userName") String userName
-      ,@ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
-      ,@ManagedDescription("End index") @ManagedName("endIndex") String endIndex)
-   {
-      try
-      {
-         int sIndex = Integer.parseInt(startIndex);
-         int eIndex = Integer.parseInt(endIndex);
-         userName = userName.trim();
-         startTransaction();
-         for (int i = sIndex; i <= eIndex; i++)
-         {
-            orgService.getUserHandler().removeUser(userName + "_" + i, true);
-         }
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-         LOG.error("Remove users fail. Please check your inputs");
-      }
-      finally
-      {
-         endTransaction();
-      }
-   }
+    }
+
+    /**
+     * Remove a list of users
+     *
+     * @param userName   The default user name
+     * @param startIndex The startIndex and the endIndex are used to generate a number of users that need to be removed,
+     *                   such as userName_0, userName_1, userName_n.
+     * @param endIndex   The end of index
+     */
+    @Managed
+    @ManagedDescription("remove amount of users")
+    @Impact(ImpactType.READ)
+    public void removeListUsers(@ManagedDescription("user name") @ManagedName("userName") String userName
+            , @ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
+            , @ManagedDescription("End index") @ManagedName("endIndex") String endIndex) {
+        try {
+            int sIndex = Integer.parseInt(startIndex);
+            int eIndex = Integer.parseInt(endIndex);
+            userName = userName.trim();
+            startTransaction("remove users");
+            for (int i = sIndex; i <= eIndex; i++) {
+                orgService.getUserHandler().removeUser(userName + "_" + i, true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("Remove users fail. Please check your inputs");
+        } finally {
+            endTransaction("remove users");
+        }
+    }
 }

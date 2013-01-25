@@ -3,6 +3,8 @@
 GateIn Data Injector defines a set of service components used for generating dataset. Those services are exposed as JMX beans
 and REST endpoints.
 
+The tool has been tested only on GateIn 3.5.Final. There is no warranty that it works correctly on other releases of GateIn
+
 # How to deploy
 
 - Run _mvn clean install_ from current directory
@@ -49,27 +51,17 @@ To create a new navigation named _testClassic_ of type _portal_ and inject 100 c
 * Invoking createNavs with navType=portal, navOwner=testClassic, prefix=testNode, startIndex=0, endIndex=100
 * Send HTTP GET request _http://localhost:8080/portal/rest/management/navInjector/createNavs?navType=portal&navOwner=testClassic&prefix=testNode&startIndex=0&endIndex=100_
 
-#### _1.2. Insert nodes into root node of existing navigation_
-
-* Method: insertNodes
-* Params: navType, navOwner, prefix, startIndex, endIndex
-
-To inject 100 children named (testNode_0, testNode_1,..., testNode_99) to root node of navigation determined by type=portal, owner=classic
-
-* Invoking insertNodes with navType=portal, navOwner=classic, prefix=testNode, startIndex=0, endIndex=100
-* Send HTTP GET request _http://localhost:8080/portal/rest/management/navInjector/insertNodes?navType=portal&navOwner=testClassic&prefix=testNode&startIndex=0&endIndex=100_
-
-#### _1.3. Insert nodes into node specified by path from root node of existing navigation_
+#### _1.2. Insert nodes into node specified by path from root node of existing navigation_
 
 * Method: insertNodes
 * Params: navType, navOwner, absolutePath, prefix, startIndex, endIndex
 
-To inject 100 children named (testNode_0, testNode_1,..., testNode_99) to node specified by path level_0/level_1 under navigation (type=portal, owner=classic)
+To inject 100 children named (testNode_0, testNode_1,..., testNode_99) to node specified by path /level_0/level_1 under navigation (type=portal, owner=classic)
 
-* Invoking insertNodes with navType=portal, navOwner=classic, absolutePath=level_0/level_1, prefix=testNode, startIndex=0, endIndex=100
-* Send HTTP GET request _http://localhost:8080/portal/rest/management/navInjector/insertNodes?navType=portal&navOwner=testClassic&absolutePath=level_0/level_1&prefix=testNode&startIndex=0&endIndex=100_
+* Invoking insertNodes with navType=portal, navOwner=classic, absolutePath=/level_0/level_1, prefix=testNode, startIndex=0, endIndex=100
+* Send HTTP GET request _http://localhost:8080/portal/rest/management/navInjector/insertNodes?navType=portal&navOwner=testClassic&absolutePath=/level_0/level_1&prefix=testNode&startIndex=0&endIndex=100_
 
-#### _1.4. Delete node specified by path from root node of existing navigation_
+#### _1.3. Delete node specified by path from root node of existing navigation_
 
 * Method: deleteNode
 * Params: navType, navOwner, absolutePath

@@ -36,145 +36,115 @@ import org.exoplatform.services.organization.OrganizationService;
 import org.gatein.common.logging.Logger;
 import org.gatein.common.logging.LoggerFactory;
 import org.gatein.portal.injector.AbstractInjector;
+
 import java.util.Date;
 
 /**
  * @author <a href="mailto:trongson.tran1228@gmail.com">Son Tran Trong</a>
  * @version $Id$
- * 
- * The <code>UserDataInjector</code> class represents service generating and injecting users to GateIn.
- * The service can be accessed via JMX (MBean: exo/userDataInject/portal/userInjector) or REST
- *
+ *          <p/>
+ *          The <code>UserDataInjector</code> class represents service generating and injecting users to GateIn.
+ *          The service can be accessed via JMX (MBean: exo/userDataInject/portal/userInjector) or REST
  */
 
 @Managed
 @ManagedDescription("Membership data injector")
 @NameTemplate({@Property(key = "view", value = "portal")
-               ,@Property(key = "service", value = "membershipInjector")
-               ,@Property(key = "type", value = "membershipDataInject")})
+        , @Property(key = "service", value = "membershipInjector")
+        , @Property(key = "type", value = "membershipDataInject")})
 @RESTEndpoint(path = "membershipInjector")
-public class MembershipDataInjector extends AbstractInjector
-{
-   private static Logger LOG = LoggerFactory.getLogger(MembershipDataInjector.class);
+public class MembershipDataInjector extends AbstractInjector {
+    private static Logger LOG = LoggerFactory.getLogger(MembershipDataInjector.class);
 
-   private MembershipTypeHandler mtHandler;
+    private MembershipTypeHandler mtHandler;
 
-   public MembershipDataInjector(OrganizationService orgService)
-   {
-      this.mtHandler = orgService.getMembershipTypeHandler();
-   }
+    public MembershipDataInjector(OrganizationService orgService) {
+        this.mtHandler = orgService.getMembershipTypeHandler();
+    }
 
-   @Override
-   public Logger getLogger()
-   {
-      return LOG;
-   }
+    @Override
+    public Logger getLogger() {
+        return LOG;
+    }
 
-   public void createMembership(String membershipName, String description) throws Exception
-   {
-      MembershipType mt = mtHandler.findMembershipType(membershipName);
-      mt = mtHandler.createMembershipTypeInstance();
-      mt.setName(membershipName);
-      mt.setDescription(description);
-      Date now = new Date();
-      mt.setCreatedDate(now);
-      mt.setModifiedDate(now);
-      mtHandler.createMembershipType(mt, true);
-   }
-   
-   /**
-    * Generate memberships data for Gatein
-    * 
-    * @param membershipName
-    * The default membership name
-    * 
-    * @param startIndex
-    * The startIndex and the endIndex are used to generate a number of memberships, 
-    * such as membershipName_0, membershipName_1, membershipName_n
-    * 
-    * @param endIndex
-    * The end of index
-    */
-   @Managed
-   @ManagedDescription("Create amount of new memberships")
-   @Impact(ImpactType.READ)
-   public void createMembershipsType(@ManagedDescription("Membership name") @ManagedName("membershipName") String membershipName
-      ,@ManagedDescription("Starting index") @ManagedName("startIndex")  String startIndex
-      ,@ManagedDescription("End index") @ManagedName("endIndex")  String endIndex)
-   {
-      try
-      {
-         if (membershipName == null || membershipName.trim().length() == 0)
-         {
-            LOG.error("Membership name cannot be null or empty");
-            throw new Exception();
-         }
-         int sIndex = Integer.parseInt(startIndex);
-         int eIndex = Integer.parseInt(endIndex);
-         membershipName = membershipName.trim();
-         startTransaction();
-         for (int i = sIndex; i <= eIndex; i++)
-         {
-            String membershipNameTemp = membershipName + "_" + i;
-            createMembership(membershipNameTemp, membershipNameTemp);
-         }
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-         LOG.error("Create memberships fail. Please check your inputs");
-      }
-      finally
-      {
-         endTransaction();
-      }
-   }
+    public void createMembership(String membershipName, String description) throws Exception {
+        MembershipType mt = mtHandler.findMembershipType(membershipName);
+        mt = mtHandler.createMembershipTypeInstance();
+        mt.setName(membershipName);
+        mt.setDescription(description);
+        Date now = new Date();
+        mt.setCreatedDate(now);
+        mt.setModifiedDate(now);
+        mtHandler.createMembershipType(mt, true);
+    }
 
-   /**
-    * Remove a list of memberships
-    * 
-    * @param membershipName
-    * The default membership name
-    * 
-    * @param startIndex
-    * The startIndex and the endIndex are used to generate a number of memberships that need to be removed, 
-    * such as membershipName_0, membershipName_1, membershipName_2
-    * 
-    * @param endIndex
-    * The end of index
-    */
-   @Managed
-   @ManagedDescription("Remove amount of memberships")
-   @Impact(ImpactType.READ)
-   public void removeMembershipsType(@ManagedDescription("Membership name") @ManagedName("membershipName") String membershipName
-      ,@ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
-      ,@ManagedDescription("End index") @ManagedName("endIndex") String endIndex)
-   {
-      try
-      {
-         if (membershipName == null || membershipName.trim().length() == 0)
-         {
-            LOG.error("Membership name cannot be null or empty");
-            throw new Exception();
-         }
-         int sIndex = Integer.parseInt(startIndex);
-         int eIndex = Integer.parseInt(endIndex);
-         membershipName = membershipName.trim();
-         startTransaction();
-         for (int i = sIndex; i <= eIndex; i++)
-         {
-            String membershipNameTemp = membershipName + "_" + i;
-            mtHandler.removeMembershipType(membershipNameTemp, true);
-         }
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-         LOG.error("Remove memberships fail. Please check your inputs");
-      }
-      finally
-      {
-         endTransaction();
-      }
-   }
+    /**
+     * Generate memberships data for Gatein
+     *
+     * @param membershipName The default membership name
+     * @param startIndex     The startIndex and the endIndex are used to generate a number of memberships,
+     *                       such as membershipName_0, membershipName_1, membershipName_n
+     * @param endIndex       The end of index
+     */
+    @Managed
+    @ManagedDescription("Create amount of new memberships")
+    @Impact(ImpactType.READ)
+    public void createMembershipsType(@ManagedDescription("Membership name") @ManagedName("membershipName") String membershipName
+            , @ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
+            , @ManagedDescription("End index") @ManagedName("endIndex") String endIndex) {
+        try {
+            if (membershipName == null || membershipName.trim().length() == 0) {
+                LOG.error("Membership name cannot be null or empty");
+                throw new Exception();
+            }
+            int sIndex = Integer.parseInt(startIndex);
+            int eIndex = Integer.parseInt(endIndex);
+            membershipName = membershipName.trim();
+            startTransaction("create new memberships");
+            for (int i = sIndex; i <= eIndex; i++) {
+                String membershipNameTemp = membershipName + "_" + i;
+                createMembership(membershipNameTemp, membershipNameTemp);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("Create memberships fail. Please check your inputs");
+        } finally {
+            endTransaction("create new memberships");
+        }
+    }
+
+    /**
+     * Remove a list of memberships
+     *
+     * @param membershipName The default membership name
+     * @param startIndex     The startIndex and the endIndex are used to generate a number of memberships that need to be removed,
+     *                       such as membershipName_0, membershipName_1, membershipName_2
+     * @param endIndex       The end of index
+     */
+    @Managed
+    @ManagedDescription("Remove amount of memberships")
+    @Impact(ImpactType.READ)
+    public void removeMembershipsType(@ManagedDescription("Membership name") @ManagedName("membershipName") String membershipName
+            , @ManagedDescription("Starting index") @ManagedName("startIndex") String startIndex
+            , @ManagedDescription("End index") @ManagedName("endIndex") String endIndex) {
+        try {
+            if (membershipName == null || membershipName.trim().length() == 0) {
+                LOG.error("Membership name cannot be null or empty");
+                throw new Exception();
+            }
+            int sIndex = Integer.parseInt(startIndex);
+            int eIndex = Integer.parseInt(endIndex);
+            membershipName = membershipName.trim();
+            startTransaction("remove memberships");
+            for (int i = sIndex; i <= eIndex; i++) {
+                String membershipNameTemp = membershipName + "_" + i;
+                mtHandler.removeMembershipType(membershipNameTemp, true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("Remove memberships fail. Please check your inputs");
+        } finally {
+            endTransaction("remove memberships");
+        }
+    }
 }

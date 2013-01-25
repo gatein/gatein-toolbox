@@ -28,36 +28,38 @@ import org.picocontainer.Startable;
  * @author <a href="hoang281283@gmail.com">Minh Hoang TO</a>
  * @date 1/11/13
  */
-public abstract class AbstractInjector implements Startable
-{
-   protected PortalContainer portalContainer;
+public abstract class AbstractInjector implements Startable {
+    protected PortalContainer portalContainer;
 
-   @Override
-   public final void start()
-   {
-      getLogger().info("Set portal container on actual service instance");
-      portalContainer = (PortalContainer)ExoContainerContext.getCurrentContainer();
-      _start();
-   }
+    @Override
+    public final void start() {
+        getLogger().info("Set portal container on actual service instance");
+        portalContainer = (PortalContainer) ExoContainerContext.getCurrentContainer();
+        _start();
+    }
 
-   public void _start()
-   {
-   }
+    public void _start() {
+    }
 
-   @Override
-   public void stop()
-   {
-   }
+    @Override
+    public void stop() {
+    }
 
-   public void startTransaction()
-   {
-      RequestLifeCycle.begin(portalContainer);
-   }
+    public void startTransaction(String action) {
+        getLogger().info("Start transaction to " + action);
+        RequestLifeCycle.begin(portalContainer);
+    }
 
-   public void endTransaction()
-   {
-      RequestLifeCycle.end();
-   }
+    public void endTransaction(String action) {
+        try {
+            RequestLifeCycle.end();
+            getLogger().info("Close transaction opened for " + action);
 
-   public abstract Logger getLogger();
+        } catch (RuntimeException ex) {
+            getLogger().info("Close transaction opened for " + action);
+            throw ex;
+        }
+    }
+
+    public abstract Logger getLogger();
 }

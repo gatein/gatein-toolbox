@@ -12,7 +12,7 @@
     <dependency>
       <groupId>org.gatein.portal</groupId>
       <artifactId>exo.portal.component.portal</artifactId>
-      <version>3.6.0.MO1-SNAPSHOT</version>
+      <version>3.5.0.Final</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
